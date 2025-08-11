@@ -8,6 +8,3 @@ import java.util.Optional;
 public interface PerfilRepository extends JpaRepository<Perfil, Long> {
     Optional<Perfil> findByNombreContainingIgnoreCase(String nombreUsario);
 }
-
-
-
