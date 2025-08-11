@@ -3,8 +3,8 @@ package com.hirematch.hirematch_api.repository;
 import com.hirematch.hirematch_api.entity.Perfil;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface PerfilRepository extends JpaRepository<Perfil, Long> {
-    Optional<Perfil> findByNombreContainingIgnoreCase(String nombreUsario);
+    List<Perfil> findByUsuario_NombreContainingIgnoreCase(String nombreUsuario);
 }
