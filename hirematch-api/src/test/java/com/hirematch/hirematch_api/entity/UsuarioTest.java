@@ -29,11 +29,10 @@ class UsuarioTest {
         validator = factory.getValidator();
         
         usuario = new Usuario();
-        usuario.setNombre("Juan");
-        usuario.setApellido("Pérez");
+        usuario.setNombre("Juan Pérez");
         usuario.setEmail("juan.perez@example.com");
-        usuario.setPassword("password123");
-        usuario.setActivo(true);
+        usuario.setPasswordHash("$2a$10$XXXXXXXXXXXXXXXXXXXXXXXX"); // Example hashed password
+        usuario.setEmailVerificado(false);
     }
 
     @Test
@@ -47,15 +46,18 @@ class UsuarioTest {
         usuario.setEmail("invalid-email");
         var violations = validator.validate(usuario);
         assertFalse(violations.isEmpty());
-        assertEquals(1, violations.size());
+        assertTrue(violations.stream()
+            .anyMatch(v -> v.getMessage().contains("email")));
     }
 
     @Test
-    void whenPasswordIsTooShortThenValidationFails() {
-        usuario.setPassword("123");
+    void whenNombreExceedsLengthThenValidationFails() {
+        String longNombre = "a".repeat(151);
+        usuario.setNombre(longNombre);
         var violations = validator.validate(usuario);
         assertFalse(violations.isEmpty());
-        assertEquals(1, violations.size());
+        assertTrue(violations.stream()
+            .anyMatch(v -> v.getMessage().contains("150 caracteres")));
     }
 
     @Test
@@ -63,41 +65,37 @@ class UsuarioTest {
         usuario.setNombre("");
         var violations = validator.validate(usuario);
         assertFalse(violations.isEmpty());
-        assertEquals(2, violations.size());
+        assertTrue(violations.stream()
+            .anyMatch(v -> v.getMessage().contains("nombre")));
+    }
+
+    @Test
+    void whenPasswordHashIsBlankThenValidationFails() {
+        usuario.setPasswordHash("");
+        var violations = validator.validate(usuario);
+        assertFalse(violations.isEmpty());
+        assertTrue(violations.stream()
+            .anyMatch(v -> v.getMessage().contains("contraseña")));
     }
 
     @Test
     void testPrePersist() {
-        assertNull(usuario.getFechaCreacion());
+        assertNull(usuario.getFechaRegistro());
         usuario = entityManager.persistAndFlush(usuario);
-        assertNotNull(usuario.getFechaCreacion());
+        assertNotNull(usuario.getFechaRegistro());
     }
 
     @Test
-    void testPreUpdate() {
-        // First persist and get initial state
-        usuario = entityManager.persistAndFlush(usuario);
-        entityManager.clear();
-
-        // Get a fresh instance
-        Usuario managedUsuario = entityManager.find(Usuario.class, usuario.getId());
-        LocalDateTime originalUpdate = managedUsuario.getFechaActualizacion();
-
-        // Wait a bit to ensure timestamp difference
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            // Ignore
-        }
-
-        // Make a change
-        managedUsuario.setNombre("Updated Name");
-        entityManager.persistAndFlush(managedUsuario);
+    void testOptionalFields() {
+        usuario.setCodigoVerificacion("123456");
+        usuario.setFechaExpiracionCodigo(LocalDateTime.now().plusHours(24));
+        usuario.setLlaveUnica("unique-key-123");
+        usuario.setUltimoAcceso(LocalDateTime.now());
         
-        // Verify the update timestamp changed
-        assertNotNull(managedUsuario.getFechaActualizacion());
-        if (originalUpdate != null) {
-            assertTrue(managedUsuario.getFechaActualizacion().isAfter(originalUpdate));
-        }
+        var violations = validator.validate(usuario);
+        assertTrue(violations.isEmpty());
+        
+        usuario = entityManager.persistAndFlush(usuario);
+        assertNotNull(usuario.getId());
     }
 }
