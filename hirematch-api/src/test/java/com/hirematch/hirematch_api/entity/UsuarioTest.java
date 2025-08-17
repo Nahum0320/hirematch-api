@@ -96,6 +96,6 @@ class UsuarioTest {
         assertTrue(violations.isEmpty());
         
         usuario = entityManager.persistAndFlush(usuario);
-        assertNotNull(usuario.getId());
+        assertNotNull(usuario.getUsuarioId());
     }
 }
