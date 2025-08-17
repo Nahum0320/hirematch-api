@@ -9,7 +9,7 @@ public class PasswordService {
      * @param contrasena la contrasena a encriptar
      * @return contrasena encriptada
      * @throws IllegalArgumentException si la contrasena es nula o vacia
-     */
+*/
     public String encriptar(String contrasena)
     {
         if (contrasena == null || contrasena.trim().isEmpty()) {
@@ -24,7 +24,6 @@ public class PasswordService {
 
     /**
      *  Verifica la contraseña para que coincida con el hash
-     *
      * @param contrasena contraseña para validar
      * @param hashed hash para validar la contraseña
      * @return si es valida o no
@@ -42,10 +41,3 @@ public class PasswordService {
             throw new RuntimeException("Error al Validar la contraseña");
         }
     }
-
-}
-
-
-
-
-
