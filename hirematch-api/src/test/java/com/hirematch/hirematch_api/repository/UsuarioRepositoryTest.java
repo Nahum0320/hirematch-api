@@ -75,15 +75,15 @@ class UsuarioRepositoryTest {
         
         Usuario saved = usuarioRepository.save(newUser);
         
-        assertThat(saved.getId()).isNotNull();
+        assertThat(saved.getUsuarioId()).isNotNull();
         assertThat(saved.getNombre()).isEqualTo(newUser.getNombre());
     }
 
     @Test
     void shouldDeleteUser() {
-        usuarioRepository.deleteById(usuario.getId());
+        usuarioRepository.deleteById(usuario.getUsuarioId());
         
-        Optional<Usuario> deleted = usuarioRepository.findById(usuario.getId());
+        Optional<Usuario> deleted = usuarioRepository.findById(usuario.getUsuarioId());
         assertThat(deleted).isEmpty();
     }
 }
