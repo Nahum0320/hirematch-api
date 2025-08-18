@@ -10,7 +10,7 @@ public class PasswordService {
      * @return contrasena encriptada
      * @throws IllegalArgumentException si la contrasena es nula o vacia
 */
-    public String encriptar(String contrasena)
+    public static String encriptar(String contrasena)
     {
         if (contrasena == null || contrasena.trim().isEmpty()) {
             throw new IllegalArgumentException("La contraseña no puede ser nula o vacía");
@@ -40,4 +40,4 @@ public class PasswordService {
         catch (Exception e){
             throw new RuntimeException("Error al Validar la contraseña");
         }
-    }
+    }}

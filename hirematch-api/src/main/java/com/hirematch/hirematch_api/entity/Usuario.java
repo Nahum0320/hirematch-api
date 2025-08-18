@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.hirematch.hirematch_api.service.PasswordService;
+
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -81,7 +83,7 @@ public class Usuario implements UserDetails {
         fechaCreacion = now;
 
         if (password != null) {
-            this.passwordHash = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode(password);
+            this.passwordHash = PasswordService.encriptar(password);
         }
     }
 
