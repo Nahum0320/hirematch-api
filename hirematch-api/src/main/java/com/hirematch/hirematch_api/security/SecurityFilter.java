@@ -32,16 +32,24 @@ public class SecurityFilter extends OncePerRequestFilter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.replace("Bearer ", "");
-            String subject = tokenService.getSubject(token);
+            
+            try {
+                String subject = tokenService.getSubject(token);
 
-            var usuario = usuarioRepository.findByEmail(subject)
-                    .orElse(null);
+                if (subject != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    var usuario = usuarioRepository.findByEmail(subject)
+                            .orElse(null);
 
-            if (usuario != null) {
-                var authentication = new UsernamePasswordAuthenticationToken(
-                        usuario, null, usuario.getAuthorities()
-                );
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    if (usuario != null) {
+                        var authentication = new UsernamePasswordAuthenticationToken(
+                                usuario, null, usuario.getAuthorities()
+                        );
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
+                }
+            } catch (Exception e) {
+                // Log del error sin exponer detalles
+                logger.warn("Token inválido: " + e.getMessage());
             }
         }
 

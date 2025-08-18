@@ -2,45 +2,18 @@ package com.hirematch.hirematch_api.DTO;
 
 public class LoginResponse {
 
-    private Long id;
-    private String nombre;
-    private String email;
     private String mensaje;
+    private String token;
 
     public LoginResponse() {
     }
 
-    public LoginResponse(Long id, String nombre, String email, String mensaje) {
-        this.id = id;
-        this.nombre = nombre;
-        this.email = email;
+    public LoginResponse( String mensaje, String token) {
         this.mensaje = mensaje;
+        this.token = token;
     }
 
-    // --- Getters & Setters ---
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    // --- Getters & Setters --
 
     public String getMensaje() {
         return mensaje;
@@ -48,5 +21,14 @@ public class LoginResponse {
 
     public void setMensaje(String mensaje) {
         this.mensaje = mensaje;
+    }
+
+    public void setToken(String token)
+    {
+        this.token = token;
+    }
+    public String getToken()
+    {
+        return token;
     }
 }
