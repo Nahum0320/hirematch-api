@@ -28,6 +28,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/verify-email").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/resend-code").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hello").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hello-protected").authenticated()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
