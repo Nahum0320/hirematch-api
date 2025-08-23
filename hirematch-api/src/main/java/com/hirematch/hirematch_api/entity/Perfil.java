@@ -1,10 +1,11 @@
 package com.hirematch.hirematch_api.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "perfiles")
@@ -16,24 +17,46 @@ public class Perfil {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "perfil_id")
-    private Long id;
+    private Long perfilId;
 
-    @NotNull(message = "El usuario es obligatorio")
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_id", nullable = false)
+    @OneToOne
+    @JoinColumn(name = "usuario_id", nullable = false, unique = true)
     private Usuario usuario;
 
-    @NotBlank(message = "El tipo de perfil es obligatorio")
-    @Pattern(regexp = "postulante|empresa", message = "El tipo de perfil debe ser 'postulante' o 'empresa'")
-    @Column(name = "tipo_perfil", length = 50, nullable = false)
+    @Column(name = "tipo_perfil", nullable = false, length = 50)
     private String tipoPerfil;
 
-    @Size(max = 255, message = "La descripción no debe superar los 255 caracteres")
     private String descripcion;
-
-    @Size(max = 150, message = "La ubicación no debe superar los 150 caracteres")
     private String ubicacion;
-
-    @Size(max = 255, message = "Las habilidades no deben superar los 255 caracteres")
     private String habilidades;
+    private String telefono;
+    private String sitioWeb;
+
+    @Column(columnDefinition = "text")
+    private String experiencia;
+
+    @Column(columnDefinition = "text")
+    private String educacion;
+
+    @Column(columnDefinition = "text")
+    private String certificaciones;
+
+    @Column(columnDefinition = "text")
+    private String intereses;
+
+    @Column(name = "fecha_creacion", updatable = false)
+    private LocalDateTime fechaCreacion;
+
+    @Column(name = "fecha_actualizacion")
+    private LocalDateTime fechaActualizacion;
+
+    @PrePersist
+    protected void onCreate() {
+        fechaCreacion = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        fechaActualizacion = LocalDateTime.now();
+    }
 }

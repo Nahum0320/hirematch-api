@@ -44,7 +44,6 @@ public class Usuario implements UserDetails {
 
     // Campo transient para recibir contraseña cruda
     @Transient
-    @NotBlank(message = "La contraseña es obligatoria")
     @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
     private String password;
 
@@ -67,7 +66,7 @@ public class Usuario implements UserDetails {
     @Column(name = "fecha_expiracion_codigo")
     private LocalDateTime fechaExpiracionCodigo;
 
-    @Column(name = "email_verificado", nullable = false)
+    @Column(name = "email_verificado", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean emailVerificado = false;
 
     @Column(name = "llave_unica", length = 255)
@@ -81,6 +80,7 @@ public class Usuario implements UserDetails {
         LocalDateTime now = LocalDateTime.now();
         fechaRegistro = now;
         fechaCreacion = now;
+        fechaExpiracionCodigo = now.plusMinutes(30);
 
         if (password != null) {
             this.passwordHash = PasswordService.encriptar(password);
