@@ -47,6 +47,14 @@ public class VerificationService {
             throw new ValidacionException("Error al enviar el correo de verificación");
         }
 
+        //actualizar codigo de verificacion en bd
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new ValidacionException("Usuario no encontrado"));
+
+        usuario.setCodigoVerificacion(codigo);
+        usuario.setFechaExpiracionCodigo(verificationCode.getExpiresAt());
+        usuarioRepository.save(usuario);
+
         return codigo;
     }
 

@@ -3,7 +3,7 @@ package com.hirematch.hirematch_api.security;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.hirematch.hirematch_api.entity.Usuario;
+import com.hirematch.hirematch_api.entity.Sesion;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -17,12 +17,11 @@ public class TokenService {
     @Value("${api.security.secret}")
     private String apiSecret;
 
-    public String generarToken(Usuario usuario) {
+    public String generarToken(Sesion sesion) {
         Algorithm algorithm = Algorithm.HMAC256(apiSecret);
         return JWT.create()
                 .withIssuer("hirematch-api")
-                .withSubject(usuario.getUsername()) // email como subject
-                .withClaim("id", usuario.getUsuarioId())
+                .withSubject(sesion.getNumeroSesion().toString()) // numero de Sesion como subject
                 .withExpiresAt(generarFechaExpiracion())
                 .sign(algorithm);
     }
