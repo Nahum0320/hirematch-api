@@ -1,6 +1,7 @@
 package com.hirematch.hirematch_api.security;
 
 import com.hirematch.hirematch_api.repository.UsuarioRepository;
+import com.hirematch.hirematch_api.service.SesionService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,10 +18,12 @@ public class SecurityFilter extends OncePerRequestFilter {
 
     private final TokenService tokenService;
     private final UsuarioRepository usuarioRepository;
+    private final SesionService sesionService;
 
-    public SecurityFilter(TokenService tokenService, UsuarioRepository usuarioRepository) {
+    public SecurityFilter(TokenService tokenService, UsuarioRepository usuarioRepository, SesionService sesionService) {
         this.tokenService = tokenService;
         this.usuarioRepository = usuarioRepository;
+        this.sesionService = sesionService;
     }
 
     @Override
@@ -37,18 +40,24 @@ public class SecurityFilter extends OncePerRequestFilter {
                 String subject = tokenService.getSubject(token);
 
                 if (subject != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    var usuario = usuarioRepository.findByEmail(subject)
-                            .orElse(null);
-
-                    if (usuario != null) {
-                        var authentication = new UsernamePasswordAuthenticationToken(
-                                usuario, null, usuario.getAuthorities()
-                        );
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    Long numeroSesion = Long.parseLong(subject);
+                    
+                    // Verificar que la sesión esté activa
+                    if (sesionService.obtenerSesion(numeroSesion).isActiva()) {
+                        var sesion = sesionService.obtenerSesion(numeroSesion);
+                        
+                        if (sesion != null && sesion.getUsuario() != null) {
+                            var usuario = sesion.getUsuario();
+                            var authentication = new UsernamePasswordAuthenticationToken(
+                                    usuario, null, usuario.getAuthorities()
+                            );
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+                        }
                     }
                 }
+            } catch (NumberFormatException e) {
+                logger.warn("ID de sesión inválido en token: " + e.getMessage());
             } catch (Exception e) {
-                // Log del error sin exponer detalles
                 logger.warn("Token inválido: " + e.getMessage());
             }
         }
