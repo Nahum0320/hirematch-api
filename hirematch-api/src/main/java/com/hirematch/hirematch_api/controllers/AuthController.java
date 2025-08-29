@@ -49,15 +49,6 @@ public class AuthController {
 
         String codigoVerificacion = " ";
 
-        // Generar y enviar código de verificación
-        try {
-            codigoVerificacion = verificationService.generarCodigoVerificacion(request.getEmail(), request.getNombre());
-        } catch (ValidacionException e) {
-            // Si falla el envío del correo, eliminar el usuario creado
-            usuarioRepository.delete(usuario);
-            throw e;
-        }
-
         usuario.setNombre(request.getNombre());
         usuario.setApellido(request.getApellido());
         usuario.setEmail(request.getEmail());
@@ -66,6 +57,14 @@ public class AuthController {
         usuario.setCodigoVerificacion(codigoVerificacion);
         usuarioRepository.save(usuario);
 
+        // Generar y enviar código de verificación
+        try {
+            codigoVerificacion = verificationService.generarCodigoVerificacion(request.getEmail(), request.getNombre());
+        } catch (ValidacionException e) {
+            // Si falla el envío del correo, eliminar el usuario creado
+            usuarioRepository.delete(usuario);
+            throw e;
+        }
 
         return ResponseEntity.ok(new RegisterResponse(
                 usuario.getUsuarioId(),
