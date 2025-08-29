@@ -3,36 +3,50 @@ package com.hirematch.hirematch_api.controllers;
 import com.hirematch.hirematch_api.DTO.PerfilUpdateRequest;
 import com.hirematch.hirematch_api.DTO.ProfileRequest;
 import com.hirematch.hirematch_api.DTO.ProfileResponse;
-import com.hirematch.hirematch_api.ValidacionException;
+import com.hirematch.hirematch_api.entity.Empresa;
 import com.hirematch.hirematch_api.entity.FotoPerfil;
 import com.hirematch.hirematch_api.entity.Perfil;
 import com.hirematch.hirematch_api.entity.Usuario;
+import com.hirematch.hirematch_api.ValidacionException;
+import com.hirematch.hirematch_api.repository.EmpresaRepository;
 import com.hirematch.hirematch_api.repository.FotoPerfilRepository;
 import com.hirematch.hirematch_api.repository.PerfilRepository;
 import com.hirematch.hirematch_api.repository.UsuarioRepository;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.Base64;
 
 @RestController
-@RequestMapping("/api/profile")
+@RequestMapping("/api/perfiles")
 public class PerfilController {
 
-    private final PerfilRepository perfilRepository;
-    private final UsuarioRepository usuarioRepository;
-    private final FotoPerfilRepository fotoPerfilRepository;
+    @Autowired
+    private PerfilRepository perfilRepository;
 
-    public PerfilController(PerfilRepository perfilRepository, UsuarioRepository usuarioRepository, FotoPerfilRepository fotoPerfilRepository) {
-        this.perfilRepository = perfilRepository;
-        this.usuarioRepository = usuarioRepository;
-        this.fotoPerfilRepository = fotoPerfilRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private FotoPerfilRepository fotoPerfilRepository;
+
+    @Autowired
+    private EmpresaRepository empresaRepository;
+
+    private boolean isValidPhone(String phone) {
+        return phone != null && phone.matches("^[+\\d\\s\\-()]+$") && phone.replaceAll("[^\\d]", "").length() >= 7;
+    }
+
+    private boolean isValidUrl(String url) {
+        return url != null && url.matches("^(https?://)?(www\\.)?[a-zA-Z0-9\\-\\.]+\\.[a-zA-Z]{2,}(/.*)?$");
     }
 
     @GetMapping("/me")
@@ -56,6 +70,13 @@ public class PerfilController {
         response.setEducacion(perfil.getEducacion());
         response.setCertificaciones(perfil.getCertificaciones());
         response.setIntereses(perfil.getIntereses());
+
+        // Include nombreEmpresa if empresa profile
+        if ("empresa".equalsIgnoreCase(perfil.getTipoPerfil())) {
+            empresaRepository.findByUsuarioUsuarioId(usuario.getUsuarioId())
+                    .stream().findFirst()
+                    .ifPresent(empresa -> response.setNombreEmpresa(empresa.getNombreEmpresa()));
+        }
 
         // Include photo as base64 if available
         fotoPerfilRepository.findByPerfil(perfil).ifPresent(foto -> {
@@ -91,6 +112,7 @@ public class PerfilController {
     }
 
     @PostMapping
+    @Transactional
     public ResponseEntity<ProfileResponse> createProfile(
             @AuthenticationPrincipal Usuario usuario,
             @Valid @RequestBody ProfileRequest request) {
@@ -101,6 +123,15 @@ public class PerfilController {
 
         if (perfilRepository.findByUsuario(usuario).isPresent()) {
             throw new ValidacionException("El usuario ya tiene un perfil creado");
+        }
+
+        if ("empresa".equalsIgnoreCase(request.getTipoPerfil())) {
+            if (request.getNombreEmpresa() == null || request.getNombreEmpresa().trim().isEmpty()) {
+                throw new ValidacionException("El nombre de la empresa es obligatorio para perfiles de tipo empresa");
+            }
+            if (empresaRepository.existsByNombreEmpresa(request.getNombreEmpresa().trim())) {
+                throw new ValidacionException("El nombre de la empresa ya está registrado");
+            }
         }
 
         if (request.getTelefono() != null && !request.getTelefono().trim().isEmpty()) {
@@ -130,9 +161,19 @@ public class PerfilController {
 
         Perfil savedPerfil = perfilRepository.save(perfil);
 
+        if ("empresa".equalsIgnoreCase(savedPerfil.getTipoPerfil())) {
+            Empresa empresa = new Empresa();
+            empresa.setUsuario(usuario);
+            empresa.setNombreEmpresa(request.getNombreEmpresa().trim());
+            empresa.setDescripcion(savedPerfil.getDescripcion());
+            empresa.setSitioWeb(savedPerfil.getSitioWeb());
+            empresaRepository.save(empresa);
+        }
+
         ProfileResponse response = new ProfileResponse();
         response.setPerfilId(savedPerfil.getPerfilId());
         response.setTipoPerfil(savedPerfil.getTipoPerfil());
+        response.setNombreEmpresa(request.getNombreEmpresa());
         response.setDescripcion(savedPerfil.getDescripcion());
         response.setUbicacion(savedPerfil.getUbicacion());
         response.setHabilidades(savedPerfil.getHabilidades());
@@ -168,13 +209,11 @@ public class PerfilController {
             throw new ValidacionException("El archivo de foto es requerido");
         }
 
-        // Validate file type (JPEG or PNG)
         String contentType = file.getContentType();
         if (!"image/jpeg".equals(contentType) && !"image/png".equals(contentType)) {
             throw new ValidacionException("Solo se permiten imágenes JPEG o PNG");
         }
 
-        // Validate file size (e.g., max 5MB)
         if (file.getSize() > 5 * 1024 * 1024) {
             throw new ValidacionException("La imagen no puede exceder los 5MB");
         }
@@ -189,7 +228,8 @@ public class PerfilController {
     }
 
     @PutMapping("/me")
-    public ResponseEntity<?> updateMyProfile(
+    @Transactional
+    public ResponseEntity<ProfileResponse> updateMyProfile(
             @AuthenticationPrincipal Usuario usuario,
             @Valid @RequestBody PerfilUpdateRequest request) {
 
@@ -199,6 +239,20 @@ public class PerfilController {
 
         Perfil perfil = perfilRepository.findByUsuario(usuario)
                 .orElseThrow(() -> new ValidacionException("No existe perfil asociado a este usuario"));
+
+        if ("empresa".equalsIgnoreCase(perfil.getTipoPerfil())) {
+            if (request.getNombreEmpresa() != null && !request.getNombreEmpresa().trim().isEmpty()) {
+                Empresa existingEmpresa = empresaRepository.findByUsuarioUsuarioId(usuario.getUsuarioId())
+                        .stream().findFirst().orElse(null);
+                if (existingEmpresa != null && !existingEmpresa.getNombreEmpresa().equals(request.getNombreEmpresa().trim())) {
+                    if (empresaRepository.existsByNombreEmpresa(request.getNombreEmpresa().trim())) {
+                        throw new ValidacionException("El nombre de la empresa ya está registrado");
+                    }
+                }
+            } else if (request.getNombreEmpresa() != null && request.getNombreEmpresa().trim().isEmpty()) {
+                throw new ValidacionException("El nombre de la empresa no puede estar vacío para perfiles de tipo empresa");
+            }
+        }
 
         if (request.getTelefono() != null && !request.getTelefono().trim().isEmpty()) {
             if (!isValidPhone(request.getTelefono())) {
@@ -230,16 +284,35 @@ public class PerfilController {
         if (request.getCertificaciones() != null) perfil.setCertificaciones(request.getCertificaciones().trim());
         if (request.getIntereses() != null) perfil.setIntereses(request.getIntereses().trim());
 
-        perfilRepository.save(perfil);
+        Perfil savedPerfil = perfilRepository.save(perfil);
 
-        return ResponseEntity.ok(perfil);
-    }
+        if ("empresa".equalsIgnoreCase(savedPerfil.getTipoPerfil())) {
+            Empresa empresa = empresaRepository.findByUsuarioUsuarioId(usuario.getUsuarioId())
+                    .stream().findFirst().orElse(new Empresa());
+            empresa.setUsuario(usuario);
+            if (request.getNombreEmpresa() != null) {
+                empresa.setNombreEmpresa(request.getNombreEmpresa().trim());
+            }
+            empresa.setDescripcion(savedPerfil.getDescripcion());
+            empresa.setSitioWeb(savedPerfil.getSitioWeb());
+            empresaRepository.save(empresa);
+        }
 
-    private boolean isValidPhone(String phone) {
-        return phone.matches("^[+\\d\\s\\-()]+$") && phone.replaceAll("[^\\d]", "").length() >= 7;
-    }
+        ProfileResponse response = new ProfileResponse();
+        response.setPerfilId(savedPerfil.getPerfilId());
+        response.setTipoPerfil(savedPerfil.getTipoPerfil());
+        response.setNombreEmpresa(request.getNombreEmpresa());
+        response.setDescripcion(savedPerfil.getDescripcion());
+        response.setUbicacion(savedPerfil.getUbicacion());
+        response.setHabilidades(savedPerfil.getHabilidades());
+        response.setTelefono(savedPerfil.getTelefono());
+        response.setSitioWeb(savedPerfil.getSitioWeb());
+        response.setExperiencia(savedPerfil.getExperiencia());
+        response.setEducacion(savedPerfil.getEducacion());
+        response.setCertificaciones(savedPerfil.getCertificaciones());
+        response.setIntereses(savedPerfil.getIntereses());
+        response.setMensaje("Perfil actualizado correctamente");
 
-    private boolean isValidUrl(String url) {
-        return url.matches("^(https?://)?(www\\.)?[a-zA-Z0-9\\-\\.]+\\.[a-zA-Z]{2,}(/.*)?$");
+        return ResponseEntity.ok(response);
     }
 }

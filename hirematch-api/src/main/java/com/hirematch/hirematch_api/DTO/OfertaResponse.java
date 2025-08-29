@@ -7,6 +7,10 @@ import lombok.Data;
 @AllArgsConstructor
 public class OfertaResponse {
 
+    public OfertaResponse() {
+        // no-argument constructor
+    }
+
     private Long id;
     private String titulo;
     private String descripcion;
