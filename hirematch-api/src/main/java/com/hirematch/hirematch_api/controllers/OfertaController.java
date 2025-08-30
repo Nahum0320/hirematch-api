@@ -1,4 +1,4 @@
-package com.hirematch.hirematch_api.controller;
+package com.hirematch.hirematch_api.controllers;
 
 import com.hirematch.hirematch_api.DTO.CrearOfertaRequest;
 import com.hirematch.hirematch_api.DTO.OfertaResponse;
