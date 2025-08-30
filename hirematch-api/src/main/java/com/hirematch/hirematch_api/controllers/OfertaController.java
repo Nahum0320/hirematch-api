@@ -41,8 +41,7 @@ public class OfertaController {
 
     @PostMapping
     public ResponseEntity<OfertaResponse> crearOferta(@Valid @RequestBody CrearOfertaRequest request,
-                                                      @RequestHeader("Authorization") String authHeader) {
-
+                                                     @RequestHeader("Authorization") String authHeader) {
         // Obtener usuario autenticado y verificar que sea empresa
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
         verificarTipoPerfil(usuario, "EMPRESA");
@@ -51,10 +50,21 @@ public class OfertaController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<OfertaResponse> updateOferta(@PathVariable Long id,
+                                                      @Valid @RequestBody CrearOfertaRequest request,
+                                                      @RequestHeader("Authorization") String authHeader) {
+        // Obtener usuario autenticado y verificar que sea empresa
+        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+        verificarTipoPerfil(usuario, "EMPRESA");
+
+        OfertaResponse response = ofertaService.updateOferta(id, request, usuario);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/feed")
     public ResponseEntity<Page<OfertaResponse>> obtenerFeed(Pageable pageable,
-                                                            @RequestHeader("Authorization") String authHeader) {
-
+                                                           @RequestHeader("Authorization") String authHeader) {
         // Obtener usuario autenticado y verificar que sea postulante
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
         verificarTipoPerfil(usuario, "POSTULANTE");

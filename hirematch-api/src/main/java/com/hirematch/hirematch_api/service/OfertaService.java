@@ -54,6 +54,28 @@ public class OfertaService {
         return mapearAResponse(saved);
     }
 
+    public OfertaResponse updateOferta(Long id, CrearOfertaRequest request, Usuario usuarioAutenticado) {
+        // Buscar la oferta por ID
+        OfertaLaboral oferta = ofertaRepository.findById(id)
+                .orElseThrow(() -> new ValidacionException("Oferta no encontrada"));
+
+        // Verificar que la oferta pertenece a la empresa del usuario autenticado
+        Empresa empresa = obtenerEmpresaDelUsuario(usuarioAutenticado);
+        if (!oferta.getEmpresa().getEmpresaId().equals(empresa.getEmpresaId())) {
+            throw new ValidacionException("No tienes permiso para actualizar esta oferta");
+        }
+
+        // Actualizar los campos de la oferta
+        oferta.setTitulo(request.getTitulo());
+        oferta.setDescripcion(request.getDescripcion());
+        oferta.setUbicacion(request.getUbicacion());
+
+        // Guardar la oferta actualizada
+        OfertaLaboral updated = ofertaRepository.save(oferta);
+
+        return mapearAResponse(updated);
+    }
+
     public Page<OfertaResponse> obtenerFeed(Pageable pageable) {
         return ofertaRepository.findAll(pageable)
                 .map(this::mapearAResponse);
