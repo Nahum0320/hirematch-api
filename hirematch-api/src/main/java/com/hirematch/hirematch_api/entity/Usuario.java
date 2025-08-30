@@ -75,6 +75,10 @@ public class Usuario implements UserDetails {
     @Column(name = "activo", nullable = false)
     private Boolean activo = false;
 
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Perfil perfil;
+
+
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -90,8 +94,12 @@ public class Usuario implements UserDetails {
     // --- Implementación de UserDetails ---
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        if (perfil == null) {
+            return List.of();
+        }
+        return List.of((GrantedAuthority) () -> perfil.getTipoPerfil());
     }
+
 
     @Override
     public String getPassword() {

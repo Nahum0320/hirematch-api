@@ -2,14 +2,13 @@ package com.hirematch.hirematch_api.DTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class OfertaResponse {
 
-    public OfertaResponse() {
-        // no-argument constructor
-    }
 
     private Long id;
     private String titulo;
