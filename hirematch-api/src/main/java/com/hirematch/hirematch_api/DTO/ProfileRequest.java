@@ -10,7 +10,7 @@ public class ProfileRequest {
     @NotBlank(message = "El tipo de perfil es obligatorio")
     private String tipoPerfil;
 
-    @NotBlank(message = "El nombre de la empresa es obligatorio para perfiles de tipo empresa")
+    
     @Size(max = 150, message = "El nombre de la empresa no puede exceder 150 caracteres")
     private String nombreEmpresa; // New field for empresa profiles
 
