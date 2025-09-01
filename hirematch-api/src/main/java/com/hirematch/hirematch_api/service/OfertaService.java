@@ -293,4 +293,58 @@ public class OfertaService {
         return empresaRepository.findByUsuario(usuario)
                 .orElseThrow(() -> new ValidacionException("Usuario no está asociado a ninguna empresa"));
     }
+
+
+
+    public Page<OfertaResponse> obtenerOfertasEmpresa(Long id, Pageable pageable) {
+
+    // Mas personalizacion a futuro
+       return ofertaRepository.findByEmpresa_EmpresaId(id, pageable)
+               .map(this::mapearaOfertaResponse);
+   }
+
+   public OfertaResponse mapearaOfertaResponse(OfertaLaboral ofertaLaboral) {
+        OfertaResponse oferta = new OfertaResponse();
+        oferta.setId(ofertaLaboral.getId());
+        oferta.setTitulo(ofertaLaboral.getTitulo());
+        oferta.setDescripcion(limitarTexto(ofertaLaboral.getDescripcion(), 200));
+        oferta.setUbicacion(ofertaLaboral.getUbicacion());
+
+        // Empresa
+        oferta.setEmpresaNombre(ofertaLaboral.getEmpresa().getNombreEmpresa());
+        oferta.setEmpresaDescripcion(limitarTexto(ofertaLaboral.getEmpresa().getDescripcion(), 150));
+
+        // Detalles básicos
+        oferta.setTipoTrabajo(ofertaLaboral.getTipoTrabajo() != null ?
+                ofertaLaboral.getTipoTrabajo().getDescripcion() : null);
+        oferta.setTipoContrato(ofertaLaboral.getTipoContrato() != null ?
+                ofertaLaboral.getTipoContrato().getDescripcion() : null);
+        oferta.setNivelExperiencia(ofertaLaboral.getNivelExperiencia() != null ?
+                ofertaLaboral.getNivelExperiencia().getDescripcion() : null);
+        oferta.setAreaTrabajo(ofertaLaboral.getAreaTrabajo());
+
+        // Salario
+        oferta.setSalarioFormateado(ofertaLaboral.getSalarioFormateado());
+        oferta.setMostrarSalario(ofertaLaboral.getMostrarSalario());
+
+        // Fechas
+        oferta.setFechaPublicacion(ofertaLaboral.getFechaPublicacion());
+        oferta.setTiempoPublicacion(calcularTiempoPublicacion(ofertaLaboral.getFechaPublicacion()));
+        oferta.setDiasParaCierre(calcularDiasParaCierre(ofertaLaboral.getFechaCierre()));
+
+        // UI/UX
+        oferta.setUrgente(ofertaLaboral.getUrgente());
+        oferta.setDestacada(ofertaLaboral.getDestacada());
+        oferta.setEtiquetas(ofertaLaboral.getEtiquetasLista());
+        oferta.setAplicacionRapida(ofertaLaboral.getAplicacionRapida());
+
+        // Estadísticas
+        oferta.setVistas(ofertaLaboral.getVistas());
+        oferta.setAplicacionesRecibidas(ofertaLaboral.getAplicacionesRecibidas());
+
+        // Estado
+        oferta.setIsActiva(ofertaLaboral.isActiva());
+        return oferta;
+    }
+
 }

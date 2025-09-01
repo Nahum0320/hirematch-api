@@ -76,6 +76,14 @@ public class OfertaController {
     }
 
 
+        @GetMapping("/empresa/{id}")
+    public ResponseEntity<Page<OfertaResponse>> obtenerOfertasEmpresa(@PathVariable Long id,
+                                                                      @RequestHeader("Authorization") String authHeader,
+                                                                      Pageable pageable) {
+        Page<OfertaResponse> response = ofertaService.obtenerOfertasEmpresa(id,pageable);
+        return ResponseEntity.ok(response);
+    }
+
     /**
      * Endpoint público para obtener ofertas sin autenticación (para SEO, etc.)
      */
