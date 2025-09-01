@@ -98,7 +98,6 @@ public class OfertaService {
         // Detalles del trabajo
         oferta.setAreaTrabajo(request.getAreaTrabajo());
 
-
         // Compensación
         oferta.setSalarioMinimo(request.getSalarioMinimo());
         // Compensación
@@ -106,33 +105,6 @@ public class OfertaService {
         oferta.setSalarioMaximo(request.getSalarioMaximo());
         oferta.setSalarioNegociable(request.getSalarioNegociable());
         oferta.setMostrarSalario(request.getMostrarSalario());
-
-    public OfertaResponse updateOferta(Long id, CrearOfertaRequest request, Usuario usuarioAutenticado) {
-        // Buscar la oferta por ID
-        OfertaLaboral oferta = ofertaRepository.findById(id)
-                .orElseThrow(() -> new ValidacionException("Oferta no encontrada"));
-
-        // Verificar que la oferta pertenece a la empresa del usuario autenticado
-        Empresa empresa = obtenerEmpresaDelUsuario(usuarioAutenticado);
-        if (!oferta.getEmpresa().getEmpresaId().equals(empresa.getEmpresaId())) {
-            throw new ValidacionException("No tienes permiso para actualizar esta oferta");
-        }
-
-        // Actualizar los campos de la oferta
-        oferta.setTitulo(request.getTitulo());
-        oferta.setDescripcion(request.getDescripcion());
-        oferta.setUbicacion(request.getUbicacion());
-
-        // Guardar la oferta actualizada
-        OfertaLaboral updated = ofertaRepository.save(oferta);
-
-        return mapearAResponse(updated);
-    }
-
-    public Page<OfertaResponse> obtenerFeed(Pageable pageable) {
-        return ofertaRepository.findAll(pageable)
-                .map(this::mapearAResponse);
-    }
 
         // Beneficios y requisitos
         oferta.setBeneficios(request.getBeneficios());
@@ -233,7 +205,6 @@ public class OfertaService {
         return response;
     }
 
-
     private OfertaFeedResponse mapearAFeedResponse(OfertaLaboral oferta) {
         OfertaFeedResponse response = new OfertaFeedResponse();
 
@@ -316,25 +287,6 @@ public class OfertaService {
         if (texto.length() <= limite) return texto;
         return texto.substring(0, limite) + "...";
     }
-
-
-   public Page<OfertaResponse> obtenerOfertasEmpresa(Long id, Pageable pageable) {
-
-    // Mas personalizacion a futuro
-       return ofertaRepository.findByEmpresa_EmpresaId(id, pageable)
-               .map(this::mapearaOfertaResponse);
-   }
-
-   public OfertaResponse mapearaOfertaResponse(OfertaLaboral ofertaLaboral) {
-        OfertaResponse response = new OfertaResponse();
-        response.setId(ofertaLaboral.getId());
-        response.setTitulo(ofertaLaboral.getTitulo());
-        response.setDescripcion(ofertaLaboral.getDescripcion());
-        response.setUbicacion(ofertaLaboral.getUbicacion());
-        response.setEmpresaNombre(ofertaLaboral.getEmpresa().getNombreEmpresa());
-        return response;
-    }
-
 
     private Empresa obtenerEmpresaDelUsuario(Usuario usuario) {
         return empresaRepository.findByUsuario(usuario)
