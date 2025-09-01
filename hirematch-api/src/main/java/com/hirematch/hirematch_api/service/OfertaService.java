@@ -97,6 +97,23 @@ public class OfertaService {
         return response;
     }
 
+   public Page<OfertaResponse> obtenerOfertasEmpresa(Long id, Pageable pageable) {
+
+    // Mas personalizacion a futuro
+       return ofertaRepository.findByEmpresa_EmpresaId(id, pageable)
+               .map(this::mapearaOfertaResponse);
+   }
+
+   public OfertaResponse mapearaOfertaResponse(OfertaLaboral ofertaLaboral) {
+        OfertaResponse response = new OfertaResponse();
+        response.setId(ofertaLaboral.getId());
+        response.setTitulo(ofertaLaboral.getTitulo());
+        response.setDescripcion(ofertaLaboral.getDescripcion());
+        response.setUbicacion(ofertaLaboral.getUbicacion());
+        response.setEmpresaNombre(ofertaLaboral.getEmpresa().getNombreEmpresa());
+        return response;
+    }
+
     private Empresa obtenerEmpresaDelUsuario(Usuario usuario) {
         // Opción más eficiente: buscar directamente por el objeto Usuario
         return empresaRepository.findByUsuario(usuario)
