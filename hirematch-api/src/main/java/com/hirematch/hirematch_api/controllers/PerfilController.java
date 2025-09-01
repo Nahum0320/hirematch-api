@@ -24,6 +24,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Base64;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 @RestController
 @RequestMapping("/api/perfiles")
@@ -314,5 +317,17 @@ public class PerfilController {
         response.setMensaje("Perfil actualizado correctamente");
 
         return ResponseEntity.ok(response);
+    }
+
+
+    @GetMapping("/empresa/id")
+    public ResponseEntity<Long> getEmpresaId(@AuthenticationPrincipal Usuario usuario) {
+        if (usuario == null) {
+            throw new ValidacionException("Usuario no autenticado");
+        }
+        Empresa empresa = empresaRepository.findByUsuarioUsuarioId(usuario.getUsuarioId())
+                .stream().findFirst()
+                .orElseThrow(() -> new ValidacionException("No existe empresa asociada a este usuario"));
+        return ResponseEntity.ok(empresa.getEmpresaId());
     }
 }

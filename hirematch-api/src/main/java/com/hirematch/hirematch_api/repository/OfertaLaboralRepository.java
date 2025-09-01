@@ -12,21 +12,24 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+
 
 @Repository
 public interface OfertaLaboralRepository extends JpaRepository<OfertaLaboral, Long> {
 
     // === BÚSQUEDAS BÁSICAS ===
-
+    
+    
     // Obtener ofertas activas ordenadas por fecha de publicación
     Page<OfertaLaboral> findByEstadoOrderByFechaPublicacionDesc(EstadoOferta estado, Pageable pageable);
 
     // Obtener ofertas por empresa
     Page<OfertaLaboral> findByEmpresaOrderByFechaPublicacionDesc(Empresa empresa, Pageable pageable);
-
+    Page<OfertaLaboral> findByEmpresa_EmpresaId(Long empresaId, Pageable pageable);
     // Obtener ofertas por estado
     List<OfertaLaboral> findByEstado(EstadoOferta estado);
+
+
 
     // === BÚSQUEDAS AVANZADAS PARA MATCHING ===
 
