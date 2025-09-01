@@ -205,6 +205,7 @@ public class OfertaService {
         return response;
     }
 
+
     private OfertaFeedResponse mapearAFeedResponse(OfertaLaboral oferta) {
         OfertaFeedResponse response = new OfertaFeedResponse();
 

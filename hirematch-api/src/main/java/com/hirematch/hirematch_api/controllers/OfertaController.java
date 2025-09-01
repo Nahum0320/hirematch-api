@@ -75,6 +75,7 @@ public class OfertaController {
         return ResponseEntity.ok(response);
     }
 
+
     /**
      * Endpoint público para obtener ofertas sin autenticación (para SEO, etc.)
      */
@@ -83,6 +84,8 @@ public class OfertaController {
         Page<OfertaFeedResponse> response = ofertaService.obtenerFeed(pageable);
         return ResponseEntity.ok(response);
     }
+
+
 
     /**
      * Extrae el usuario autenticado desde el JWT
