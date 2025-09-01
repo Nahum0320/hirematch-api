@@ -42,6 +42,20 @@ public class OfertaService {
         return mapearAOfertaResponse(saved);
     }
 
+    public OfertaResponse updateOferta(Long id, CrearOfertaRequest request, Usuario usuarioAutenticado) {
+        OfertaLaboral oferta = ofertaRepository.findById(id)
+                .orElseThrow(() -> new ValidacionException("Oferta no encontrada"));
+
+        Empresa empresa = obtenerEmpresaDelUsuario(usuarioAutenticado);
+        if (!oferta.getEmpresa().getEmpresaId().equals(empresa.getEmpresaId())) {
+            throw new ValidacionException("No tienes permiso para actualizar esta oferta");
+        }
+
+        mapearRequestAEntidad(request, oferta);
+        OfertaLaboral updated = ofertaRepository.save(oferta);
+        return mapearAOfertaResponse(updated);
+    }
+
     public Page<OfertaFeedResponse> obtenerFeed(Pageable pageable) {
         return ofertaRepository.findByEstadoOrderByFechaPublicacionDesc(EstadoOferta.ACTIVA, pageable)
                 .map(this::mapearAFeedResponse);
