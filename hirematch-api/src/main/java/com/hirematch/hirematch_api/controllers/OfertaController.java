@@ -73,15 +73,6 @@ public class OfertaController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/empresa/{id}")
-    public ResponseEntity<Page<OfertaResponse>> obtenerOfertasEmpresa(@PathVariable Long id,
-                                                                      @RequestHeader("Authorization") String authHeader,
-                                                                      Pageable pageable) {
-        // Obtener usuario autenticado y verificar que sea empresa
-
-        Page<OfertaResponse> response = ofertaService.obtenerOfertasEmpresa(id, pageable);
-        return ResponseEntity.ok(response);
-    }
     /**
      * Extrae el usuario autenticado desde el JWT
      */
