@@ -2,6 +2,7 @@ package com.hirematch.hirematch_api.controllers;
 
 import com.hirematch.hirematch_api.DTO.CrearOfertaRequest;
 import com.hirematch.hirematch_api.DTO.OfertaResponse;
+import com.hirematch.hirematch_api.DTO.OfertaFeedResponse;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.entity.Perfil;
 import com.hirematch.hirematch_api.entity.Sesion;
@@ -41,7 +42,8 @@ public class OfertaController {
 
     @PostMapping
     public ResponseEntity<OfertaResponse> crearOferta(@Valid @RequestBody CrearOfertaRequest request,
-                                                     @RequestHeader("Authorization") String authHeader) {
+                                                      @RequestHeader("Authorization") String authHeader) {
+
         // Obtener usuario autenticado y verificar que sea empresa
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
         verificarTipoPerfil(usuario, "EMPRESA");
@@ -50,28 +52,40 @@ public class OfertaController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<OfertaResponse> updateOferta(@PathVariable Long id,
-                                                      @Valid @RequestBody CrearOfertaRequest request,
-                                                      @RequestHeader("Authorization") String authHeader) {
-        // Obtener usuario autenticado y verificar que sea empresa
-        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
-        verificarTipoPerfil(usuario, "EMPRESA");
-
-        OfertaResponse response = ofertaService.updateOferta(id, request, usuario);
-        return ResponseEntity.ok(response);
-    }
-
     @GetMapping("/feed")
-    public ResponseEntity<Page<OfertaResponse>> obtenerFeed(Pageable pageable,
-                                                           @RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Page<OfertaFeedResponse>> obtenerFeed(Pageable pageable,
+                                                                @RequestHeader("Authorization") String authHeader) {
+
         // Obtener usuario autenticado y verificar que sea postulante
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
         verificarTipoPerfil(usuario, "POSTULANTE");
 
-        Page<OfertaResponse> response = ofertaService.obtenerFeedParaUsuario(pageable, usuario);
+        Page<OfertaFeedResponse> response = ofertaService.obtenerFeedParaUsuario(pageable, usuario);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<OfertaResponse> obtenerOferta(@PathVariable Long id,
+                                                        @RequestHeader("Authorization") String authHeader) {
+
+        // Obtener usuario autenticado (puede ser cualquier tipo)
+        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+
+        OfertaResponse response = ofertaService.obtenerOfertaPorId(id);
+        return ResponseEntity.ok(response);
+    }
+
+
+    /**
+     * Endpoint público para obtener ofertas sin autenticación (para SEO, etc.)
+     */
+    @GetMapping("/publico")
+    public ResponseEntity<Page<OfertaFeedResponse>> obtenerFeedPublico(Pageable pageable) {
+        Page<OfertaFeedResponse> response = ofertaService.obtenerFeed(pageable);
+        return ResponseEntity.ok(response);
+    }
+
+
 
     /**
      * Extrae el usuario autenticado desde el JWT
