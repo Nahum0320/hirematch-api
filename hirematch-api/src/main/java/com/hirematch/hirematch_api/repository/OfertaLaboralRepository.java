@@ -1,6 +1,6 @@
 package com.hirematch.hirematch_api.repository;
-
 import com.hirematch.hirematch_api.entity.*;
+import com.hirematch.hirematch_api.entity.OfertaLaboral;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,6 +14,8 @@ import java.util.Optional;
 
 @Repository
 public interface OfertaLaboralRepository extends JpaRepository<OfertaLaboral, Long> {
+    Page<OfertaLaboral> findByEmpresa_EmpresaId(Long empresaId, Pageable pageable);
+
 
     // === BÚSQUEDAS BÁSICAS ===
 
