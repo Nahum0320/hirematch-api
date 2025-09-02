@@ -361,4 +361,16 @@ public class OfertaService {
         return oferta;
     }
 
+    public void eliminarOferta(Long id, Usuario usuarioAutenticado) {
+        // Validar que la oferta existe
+        OfertaLaboral oferta = ofertaRepository.findById(id)
+                .orElseThrow(() -> new ValidacionException("Oferta no encontrada"));
+
+        // Verificar que el usuario autenticado sea el propietario de la oferta
+        if (!oferta.getEmpresa().getUsuario().equals(usuarioAutenticado)) {
+            throw new ValidacionException("No tiene permiso para eliminar esta oferta");
+        }
+
+        ofertaRepository.delete(oferta);
+    }
 }

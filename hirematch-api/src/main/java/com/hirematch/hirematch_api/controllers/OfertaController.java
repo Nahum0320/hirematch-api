@@ -168,4 +168,15 @@ public class OfertaController {
             throw new ValidacionException("Acceso denegado. Se requiere perfil de tipo " + tipoRequerido);
         }
     }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarOferta(@PathVariable Long id,
+                                                @RequestHeader("Authorization") String authHeader) {
+        //TODO: Hacer borrado logico en un futuro?
+        // Obtener usuario autenticado y verificar que sea empresa
+        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+        verificarTipoPerfil(usuario, "EMPRESA");
+        ofertaService.eliminarOferta(id, usuario);
+        return ResponseEntity.noContent().build();
+    }
 }
