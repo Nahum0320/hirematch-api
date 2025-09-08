@@ -5,12 +5,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class ProfileResponse {
     private Long perfilId;
     private String tipoPerfil;
     private String nombreEmpresa;
+    private Long empresaId; // Add this field
     private String descripcion;
     private String ubicacion;
     private String habilidades;

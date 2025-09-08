@@ -24,8 +24,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Base64;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 
 @RestController
@@ -53,43 +51,46 @@ public class PerfilController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ProfileResponse> getMyProfile(@AuthenticationPrincipal Usuario usuario) {
-        if (usuario == null) {
-            throw new ValidacionException("Usuario no autenticado");
-        }
-
-        Perfil perfil = perfilRepository.findByUsuario(usuario)
-                .orElseThrow(() -> new ValidacionException("No existe perfil asociado a este usuario"));
-
-        ProfileResponse response = new ProfileResponse();
-        response.setPerfilId(perfil.getPerfilId());
-        response.setTipoPerfil(perfil.getTipoPerfil());
-        response.setDescripcion(perfil.getDescripcion());
-        response.setUbicacion(perfil.getUbicacion());
-        response.setHabilidades(perfil.getHabilidades());
-        response.setTelefono(perfil.getTelefono());
-        response.setSitioWeb(perfil.getSitioWeb());
-        response.setExperiencia(perfil.getExperiencia());
-        response.setEducacion(perfil.getEducacion());
-        response.setCertificaciones(perfil.getCertificaciones());
-        response.setIntereses(perfil.getIntereses());
-
-        // Include nombreEmpresa if empresa profile
-        if ("empresa".equalsIgnoreCase(perfil.getTipoPerfil())) {
-            empresaRepository.findByUsuarioUsuarioId(usuario.getUsuarioId())
-                    .stream().findFirst()
-                    .ifPresent(empresa -> response.setNombreEmpresa(empresa.getNombreEmpresa()));
-        }
-
-        // Include photo as base64 if available
-        fotoPerfilRepository.findByPerfil(perfil).ifPresent(foto -> {
-            String base64Image = Base64.getEncoder().encodeToString(foto.getFoto());
-            response.setFotoUrl("data:image/jpeg;base64," + base64Image);
-        });
-
-        response.setMensaje("Perfil recuperado correctamente");
-        return ResponseEntity.ok(response);
+public ResponseEntity<ProfileResponse> getMyProfile(@AuthenticationPrincipal Usuario usuario) {
+    if (usuario == null) {
+        throw new ValidacionException("Usuario no autenticado");
     }
+
+    Perfil perfil = perfilRepository.findByUsuario(usuario)
+            .orElseThrow(() -> new ValidacionException("No existe perfil asociado a este usuario"));
+
+    ProfileResponse response = new ProfileResponse();
+    response.setPerfilId(perfil.getPerfilId());
+    response.setTipoPerfil(perfil.getTipoPerfil());
+    response.setDescripcion(perfil.getDescripcion());
+    response.setUbicacion(perfil.getUbicacion());
+    response.setHabilidades(perfil.getHabilidades());
+    response.setTelefono(perfil.getTelefono());
+    response.setSitioWeb(perfil.getSitioWeb());
+    response.setExperiencia(perfil.getExperiencia());
+    response.setEducacion(perfil.getEducacion());
+    response.setCertificaciones(perfil.getCertificaciones());
+    response.setIntereses(perfil.getIntereses());
+
+    // Include nombreEmpresa and empresaId if empresa profile
+    if ("empresa".equalsIgnoreCase(perfil.getTipoPerfil())) {
+        empresaRepository.findByUsuarioUsuarioId(usuario.getUsuarioId())
+                .stream().findFirst()
+                .ifPresent(empresa -> {
+                    response.setNombreEmpresa(empresa.getNombreEmpresa());
+                    response.setEmpresaId(empresa.getEmpresaId()); // Add empresaId
+                });
+    }
+
+    // Include photo as base64 if available
+    fotoPerfilRepository.findByPerfil(perfil).ifPresent(foto -> {
+        String base64Image = Base64.getEncoder().encodeToString(foto.getFoto());
+        response.setFotoUrl("data:image/jpeg;base64," + base64Image);
+    });
+
+    response.setMensaje("Perfil recuperado correctamente");
+    return ResponseEntity.ok(response);
+}
 
     @GetMapping("/{perfilId}/foto")
     public ResponseEntity<byte[]> getProfilePhoto(
