@@ -1,6 +1,7 @@
 package com.hirematch.hirematch_api.controllers;
 
 import com.hirematch.hirematch_api.ValidacionException;
+import com.hirematch.hirematch_api.DTO.MatchResponse;
 import com.hirematch.hirematch_api.entity.Match;
 import com.hirematch.hirematch_api.entity.Perfil;
 import com.hirematch.hirematch_api.entity.Sesion;
@@ -42,27 +43,54 @@ public class MatchController {
 
     // Obtener matches por oferta
     @GetMapping("/oferta/{ofertaId}")
-    public List<Match> getMatchesByOferta(@PathVariable Long ofertaId) {
-        return matchService.getMatchesByOfertaId(ofertaId);
+    public ResponseEntity<List<MatchResponse>> getMatchesByOferta(@PathVariable Long ofertaId,
+                                           @RequestHeader("Authorization") String authHeader) {
+    Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+    verificarTipoPerfil(usuario, "EMPRESA");
+    //verificar que la oferta pertenece a la empresa
+    if (!ofertaService.perteneceAUsuario(ofertaId, usuario)) {
+        throw new ValidacionException("La oferta no pertenece a la empresa");
+    }
+    List<Match> matches = matchService.getMatchesByOfertaId(ofertaId);
+    //mapear a un DTO si es necesario
+
+    
+    List<MatchResponse> matchResponses = matches.stream()
+            .map(match -> new MatchResponse(
+                match.getId(), match.getLike().getId(), match.getEmpresa().getEmpresaId(), match.getFechaMatch()))
+            .toList();
+    return ResponseEntity.ok(matchResponses);
     }
 
     // Crear un nuevo match (ejemplo)
-    @PostMapping("/like/{likeId}")
-    public ResponseEntity<String> createMatch(@PathVariable Long likeId,
-                              @RequestHeader("Authorization") String authHeader) {
-        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
-        verificarTipoPerfil(usuario, "EMPRESA");
-        //verificar que la oferta a la que pertenece el like es de la empresa
-        if (!ofertaService.perteneceAUsuario(likeService
-        .findById(likeId)
-        .get().
-        getOferta()
-        .getId(), usuario)) {
-            throw new ValidacionException("El like no pertenece a la empresa");
+  @PostMapping("/like/{likeId}")
+public ResponseEntity<String> createMatch(@PathVariable Long likeId,
+                                          @RequestHeader("Authorization") String authHeader) {
+    Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+    verificarTipoPerfil(usuario, "EMPRESA");
+
+    try {
+        var likeOpt = likeService.findById(likeId);
+        if (likeOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("El like con ID " + likeId + " no existe");
         }
+
+        var like = likeOpt.get();
+        var ofertaId = like.getOferta().getId();
+
+        if (!ofertaService.perteneceAUsuario(ofertaId, usuario)) {
+            throw new ValidacionException("La oferta asociada al like no pertenece a la empresa actual");
+        }
+
         matchService.hacerMatch(usuario, likeId);
+
         return ResponseEntity.ok("Match creado exitosamente");
+    } catch (ValidacionException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
     }
+}
+
+    
     private Usuario obtenerUsuarioAutenticado(String authHeader) {
         // Validar formato del header
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {

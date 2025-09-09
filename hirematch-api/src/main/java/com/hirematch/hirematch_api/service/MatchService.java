@@ -46,13 +46,21 @@ public class MatchService {
 
     public void hacerMatch(Usuario usuario, Long likeId) {
         Perfil perfil = perfilRepository.findByUsuario(usuario)
-                .orElseThrow(() -> new ValidacionException("Perfil no encontrado"));
+                .orElseThrow(() -> {
+                    System.out.println("Perfil no encontrado para usuario: ");
+                    return new ValidacionException("Perfil no encontrado");
+                });
         if (!"EMPRESA".equalsIgnoreCase(perfil.getTipoPerfil())) {
-            throw new ValidacionException("Solo empresas pueden hacer matches   ");
+            System.out.println("Usuario no es EMPRESA: ");
+            throw new ValidacionException("Solo empresas pueden hacer matches");
         }
         Like like = likeRepository.findById(likeId)
-                .orElseThrow(() -> new ValidacionException("Like no encontrado"));
+                .orElseThrow(() -> {
+                    System.out.println("Like no encontrado: " + likeId);
+                    return new ValidacionException("Like no encontrado");
+                });
         if (likeRepository.findByPerfilAndOferta(perfil, like.getOferta()).isPresent()) {
+            System.out.println("Ya has hecho match con este postulante");
             throw new ValidacionException("Ya has hecho match con este postulante");
         }
         Match match = new Match();

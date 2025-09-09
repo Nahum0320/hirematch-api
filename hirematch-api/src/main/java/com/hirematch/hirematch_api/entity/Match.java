@@ -22,8 +22,8 @@ public class Match {
     @JoinColumn(name = "empresa_id")
     private Empresa empresa;
 
-    @OneToOne
-    @JoinColumn(name = "like_id")
+   @OneToOne(optional = false) 
+    @JoinColumn(name = "like_id", nullable = false, unique = true)
     private Like like;
 
     @Column(name = "fecha_match", nullable = false)
