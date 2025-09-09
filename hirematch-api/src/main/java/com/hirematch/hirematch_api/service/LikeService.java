@@ -1,4 +1,5 @@
 package com.hirematch.hirematch_api.service;
+import com.hirematch.hirematch_api.DTO.LikeResponse;
 import com.hirematch.hirematch_api.DTO.ProfileResponse;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.entity.Empresa;
@@ -14,8 +15,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 @Service
 public class LikeService {
@@ -85,4 +88,25 @@ public class LikeService {
 // Agrega fotoUrl si es necesario, similar a tu controlador
         return response;
     }
+    public List<LikeResponse> getLikesByOferta(Long ofertaId) {
+        OfertaLaboral oferta = ofertaRepository.findById(ofertaId)
+                .orElseThrow(() -> new ValidacionException("Oferta no encontrada"));
+        List<Like> likes = likeRepository.findByOferta(oferta);
+        return likes.stream()
+                .map(this::mapToLikeResponse)
+                .collect(Collectors.toList());
+    }
+
+    private LikeResponse mapToLikeResponse(Like like) {
+        LikeResponse response = new LikeResponse();
+        response.setId(like.getId());
+        response.setPerfilId(like.getPerfil().getPerfilId());
+        response.setOfertaId(like.getOferta().getId());
+        response.setFechaLike(like.getFechaLike());
+        return response;
+    }
+
+    public Optional<Like> findById(Long likeId) {
+        return likeRepository.findById(likeId);
+    }   
 }
