@@ -35,6 +35,11 @@ public class OfertaService {
         OfertaLaboral saved = ofertaRepository.save(oferta);
         return mapearAOfertaResponse(saved);
     }
+    public boolean perteneceAUsuario(Long ofertaId, Usuario usuario) {
+        OfertaLaboral oferta = ofertaRepository.findById(ofertaId)
+                .orElseThrow(() -> new ValidacionException("Oferta no encontrada"));
+        return oferta.getEmpresa().getUsuario().equals(usuario);
+    }
     public OfertaResponse updateOferta(Long id, CrearOfertaRequest request, Usuario usuarioAutenticado) {
         OfertaLaboral oferta = ofertaRepository.findById(id)
                 .orElseThrow(() -> new ValidacionException("Oferta no encontrada"));

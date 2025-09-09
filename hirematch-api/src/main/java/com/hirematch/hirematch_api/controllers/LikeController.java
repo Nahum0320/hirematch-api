@@ -1,7 +1,9 @@
 package com.hirematch.hirematch_api.controllers;
 
+import com.hirematch.hirematch_api.DTO.LikeResponse;
 import com.hirematch.hirematch_api.DTO.ProfileResponse;
 import com.hirematch.hirematch_api.ValidacionException;
+import com.hirematch.hirematch_api.entity.Like;
 import com.hirematch.hirematch_api.entity.Perfil;
 import com.hirematch.hirematch_api.entity.Sesion;
 import com.hirematch.hirematch_api.entity.Usuario;
@@ -9,11 +11,18 @@ import com.hirematch.hirematch_api.repository.PerfilRepository;
 import com.hirematch.hirematch_api.repository.SesionRepository;
 import com.hirematch.hirematch_api.security.TokenService;
 import com.hirematch.hirematch_api.service.LikeService;
+import com.hirematch.hirematch_api.service.OfertaService;
+
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @RestController
 @RequestMapping("/api/likes")
@@ -23,13 +32,16 @@ public class LikeController {
     private final TokenService tokenService;
     private final SesionRepository sesionRepository;
     private final PerfilRepository perfilRepository;
+    private final OfertaService ofertaService;     
 
     public LikeController(LikeService likeService, TokenService tokenService,
-                          SesionRepository sesionRepository, PerfilRepository perfilRepository) {
+                          SesionRepository sesionRepository, PerfilRepository perfilRepository,
+                          OfertaService ofertaService) {
         this.likeService = likeService;
         this.tokenService = tokenService;
         this.sesionRepository = sesionRepository;
         this.perfilRepository = perfilRepository;
+        this.ofertaService = ofertaService; 
     }
 
     @PostMapping("/oferta/{ofertaId}")
@@ -70,6 +82,18 @@ public class LikeController {
         } catch (Exception e) {
             throw new ValidacionException("Error al procesar el token: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/oferta/{ofertaId}")
+    public ResponseEntity<List<LikeResponse>> getLikesByOferta(@PathVariable Long ofertaId,
+                                                               @RequestHeader("Authorization") String authHeader) {
+        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+        verificarTipoPerfil(usuario, "EMPRESA");
+        //verificar que la oferta le pertenezca a la empresa
+        if (!ofertaService.perteneceAUsuario(ofertaId, usuario)) {
+            throw new ValidacionException("La oferta no pertenece a la empresa");
+        }
+        return ResponseEntity.ok(likeService.getLikesByOferta(ofertaId));
     }
 
     private void verificarTipoPerfil(Usuario usuario, String tipoRequerido) {
