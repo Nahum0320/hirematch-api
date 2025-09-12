@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import com.hirematch.hirematch_api.entity.EstadoPostulacion;
 
 
 @RestController
@@ -32,7 +33,7 @@ public class LikeController {
     private final TokenService tokenService;
     private final SesionRepository sesionRepository;
     private final PerfilRepository perfilRepository;
-    private final OfertaService ofertaService;     
+    private final OfertaService ofertaService;
 
     public LikeController(LikeService likeService, TokenService tokenService,
                           SesionRepository sesionRepository, PerfilRepository perfilRepository,
@@ -41,7 +42,7 @@ public class LikeController {
         this.tokenService = tokenService;
         this.sesionRepository = sesionRepository;
         this.perfilRepository = perfilRepository;
-        this.ofertaService = ofertaService; 
+        this.ofertaService = ofertaService;
     }
 
     @PostMapping("/oferta/{ofertaId}")
@@ -50,6 +51,14 @@ public class LikeController {
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
         likeService.darLike(usuario, ofertaId);
         return ResponseEntity.ok("Like registrado correctamente");
+    }
+
+    @PostMapping("/swipe/superlike/{ofertaId}")
+    public ResponseEntity<String> darSuperLike(@PathVariable Long ofertaId,
+                                               @RequestHeader("Authorization") String authHeader) {
+        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+        likeService.darSuperLike(usuario, ofertaId);
+        return ResponseEntity.ok("Superlike registrado correctamente");
     }
 
     private Usuario obtenerUsuarioAutenticado(String authHeader) {
