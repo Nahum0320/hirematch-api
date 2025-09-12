@@ -10,11 +10,15 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LikeResponse {
-    private Long id;
-    private Long perfilId;
+public class MatchUsuarioResponse {
+    private Long postulacionId;
     private Long ofertaId;
-    private LocalDateTime fechaLike;
+    private String tituloOferta;
+    private String descripcionOferta;
+    private String ubicacionOferta;
+    private String empresaNombre;
+    private String empresaDescripcion;
+    private LocalDateTime fechaPostulacion;
+    private String estado;
     private boolean superLike;
-    private String estado; // Descripción del estado
 }
