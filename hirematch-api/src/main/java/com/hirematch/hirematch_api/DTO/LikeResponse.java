@@ -11,10 +11,16 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LikeResponse {
-    private Long id;
+    private Long LikeId; // o Long id;
+    private String usuarioEmail; // NECESARIO para el frontend
+    private LocalDateTime FechaLike; // NECESARIO para el frontend  
+    private String tipoLike; // NECESARIO para el frontend
+    
+    // Campos adicionales que ya tienes
     private Long perfilId;
     private Long ofertaId;
-    private LocalDateTime fechaLike;
-    private boolean superLike;
-    private String estado; // Descripción del estado
+    private String estado;
+    private Boolean superLike;
+    
+    // getters y setters para todos
 }

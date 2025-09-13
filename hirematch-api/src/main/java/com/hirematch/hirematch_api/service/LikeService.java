@@ -158,15 +158,19 @@ public class LikeService {
     }
 
     private LikeResponse mapToLikeResponse(PostulantePorOferta postulacion) {
-        LikeResponse response = new LikeResponse();
-        response.setId(postulacion.getId());
-        response.setPerfilId(postulacion.getPostulante().getPerfilId());
-        response.setOfertaId(postulacion.getOferta().getId());
-        response.setFechaLike(postulacion.getFechaPostulacion());
-        response.setSuperLike(postulacion.isSuperLike());
-        response.setEstado(postulacion.getEstado().getDescripcion());
-        return response;
-    }
+    LikeResponse response = new LikeResponse();
+    response.setLikeId(postulacion.getId()); // o usar setId() si tu clase usa 'id'
+    response.setUsuarioEmail(postulacion.getPostulante().getUsuario().getEmail()); // Agregar esta línea
+    response.setFechaLike(postulacion.getFechaPostulacion()); // Convertir a String
+    response.setTipoLike(postulacion.isSuperLike() ? "SUPER_LIKE" : "LIKE"); // Agregar esta línea
+    
+    // Los campos adicionales que ya tienes (opcionales para el frontend actual)
+    response.setPerfilId(postulacion.getPostulante().getPerfilId());
+    response.setOfertaId(postulacion.getOferta().getId());
+    response.setEstado(postulacion.getEstado().getDescripcion());
+    
+    return response;
+}
 
     public Optional<Like> findById(Long likeId) {
         return likeRepository.findById(likeId);

@@ -1,17 +1,21 @@
 package com.hirematch.hirematch_api.controllers;
 
+import com.hirematch.hirematch_api.DTO.PerfilPublicoResponse;
 import com.hirematch.hirematch_api.DTO.PerfilUpdateRequest;
 import com.hirematch.hirematch_api.DTO.ProfileRequest;
 import com.hirematch.hirematch_api.DTO.ProfileResponse;
 import com.hirematch.hirematch_api.entity.Empresa;
 import com.hirematch.hirematch_api.entity.FotoPerfil;
 import com.hirematch.hirematch_api.entity.Perfil;
+import com.hirematch.hirematch_api.entity.Sesion;
 import com.hirematch.hirematch_api.entity.Usuario;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.repository.EmpresaRepository;
 import com.hirematch.hirematch_api.repository.FotoPerfilRepository;
 import com.hirematch.hirematch_api.repository.PerfilRepository;
 import com.hirematch.hirematch_api.repository.UsuarioRepository;
+import com.hirematch.hirematch_api.repository.SesionRepository;
+import com.hirematch.hirematch_api.security.TokenService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -41,6 +45,17 @@ public class PerfilController {
 
     @Autowired
     private EmpresaRepository empresaRepository;
+
+    @Autowired
+    private com.hirematch.hirematch_api.service.PerfilService perfilService;
+
+    private final TokenService tokenService;
+    private final SesionRepository sesionRepository;
+
+    public PerfilController(TokenService tokenService, SesionRepository sesionRepository) {
+        this.tokenService = tokenService;
+        this.sesionRepository = sesionRepository;
+    }
 
     private boolean isValidPhone(String phone) {
         return phone != null && phone.matches("^[+\\d\\s\\-()]+$") && phone.replaceAll("[^\\d]", "").length() >= 7;
@@ -331,4 +346,79 @@ public ResponseEntity<ProfileResponse> getMyProfile(@AuthenticationPrincipal Usu
                 .orElseThrow(() -> new ValidacionException("No existe empresa asociada a este usuario"));
         return ResponseEntity.ok(empresa.getEmpresaId());
     }
+
+    @GetMapping("/publico")
+public ResponseEntity<PerfilPublicoResponse> getPerfilPublicoPorEmail(
+        @RequestParam String email,
+        @RequestHeader("Authorization") String authHeader) {
+    
+    // Obtener usuario autenticado (reutiliza tu método existente)
+    Usuario usuarioAutenticado = obtenerUsuarioAutenticado(authHeader);
+    
+    // Verificar que sea una empresa
+    verificarTipoPerfil(usuarioAutenticado, "EMPRESA");
+    
+    PerfilPublicoResponse perfil = perfilService.getPerfilPublicoPorEmail(email);
+    
+    return ResponseEntity.ok(perfil);
+}
+
+    private Usuario obtenerUsuarioAutenticado(String authHeader) {
+        // Validar formato del header
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new ValidacionException("Token de autorización requerido");
+        }
+
+        // Extraer token
+        String token = authHeader.substring(7);
+
+        if (token.trim().isEmpty()) {
+            throw new ValidacionException("Token vacío");
+        }
+
+        try {
+            // Obtener subject del token (número de sesión)
+            String subject = tokenService.getSubject(token);
+
+            if (subject == null || subject.trim().isEmpty()) {
+                throw new ValidacionException("Token inválido");
+            }
+
+            // Convertir a Long y obtener sesión
+            Long numeroSesion = Long.parseLong(subject);
+
+            Sesion sesion = sesionRepository.findById(numeroSesion)
+                    .orElseThrow(() -> new ValidacionException("Sesión no encontrada"));
+
+            // Verificar que la sesión esté activa
+            if (!sesion.isActiva()) {
+                throw new ValidacionException("Sesión inactiva o expirada");
+            }
+
+            // Verificar que la sesión no haya expirado por tiempo
+            if (sesion.hasExpired()) {
+                throw new ValidacionException("Sesión expirada");
+            }
+
+            return sesion.getUsuario();
+
+        } catch (NumberFormatException e) {
+            throw new ValidacionException("Token de sesión inválido");
+        } catch (Exception e) {
+            throw new ValidacionException("Error al procesar el token: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Verifica que el usuario tenga el tipo de perfil requerido
+     */
+    private void verificarTipoPerfil(Usuario usuario, String tipoRequerido) {
+        Perfil perfil = perfilRepository.findByUsuario(usuario)
+                .orElseThrow(() -> new ValidacionException("El usuario no tiene un perfil configurado"));
+
+        if (!tipoRequerido.equalsIgnoreCase(perfil.getTipoPerfil())) {
+            throw new ValidacionException("Acceso denegado. Se requiere perfil de tipo " + tipoRequerido);
+        }
+    }
+    
 }
