@@ -62,6 +62,10 @@ public class LikeService {
         postulacion.setEstado(EstadoPostulacion.PENDING);
         postulacion.setSuperLike(false);
         postulacionRepository.save(postulacion);
+
+        // Incrementar aplicaciones recibidas
+        oferta.incrementarAplicaciones();
+        ofertaRepository.save(oferta);
     }
 
     public void darSuperLike(Usuario usuario, Long ofertaId) {
@@ -99,6 +103,10 @@ public class LikeService {
         postulacion.setOferta(oferta);
         postulacion.setSuperLike();
         postulacionRepository.save(postulacion);
+
+        // Incrementar aplicaciones recibidas
+        oferta.incrementarAplicaciones();
+        ofertaRepository.save(oferta);
     }
 
     public Page<ProfileResponse> getMatchesForEmpresa(Usuario usuarioEmpresa, Pageable pageable) {
