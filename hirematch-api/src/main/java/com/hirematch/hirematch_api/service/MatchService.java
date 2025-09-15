@@ -1,3 +1,4 @@
+
 package com.hirematch.hirematch_api.service;
 
 import com.hirematch.hirematch_api.entity.*;
@@ -15,6 +16,16 @@ import java.util.Optional;
 
 @Service
 public class MatchService {
+
+    /**
+     * Devuelve la postulación asociada a un like (perfil y oferta).
+     */
+    public Optional<PostulantePorOferta> obtenerPostulacionPorLike(Like like) {
+        if (like == null || like.getPerfil() == null || like.getOferta() == null) {
+            return Optional.empty();
+        }
+        return postulacionRepository.findByPostulanteAndOferta(like.getPerfil(), like.getOferta());
+    }
 
     private final MatchRepository matchRepository;
     private final LikeRepository likeRepository;
