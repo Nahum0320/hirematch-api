@@ -24,15 +24,17 @@ public class LikeService {
     private final OfertaLaboralRepository ofertaRepository;
     private final EmpresaRepository empresaRepository;
     private final PostulantePorOfertaRepository postulacionRepository;
+    private final PassRepository passRepository;
 
     public LikeService(LikeRepository likeRepository, PerfilRepository perfilRepository,
                        OfertaLaboralRepository ofertaRepository, EmpresaRepository empresaRepository,
-                       PostulantePorOfertaRepository postulacionRepository) {
+                       PostulantePorOfertaRepository postulacionRepository, PassRepository passRepository) {
         this.likeRepository = likeRepository;
         this.perfilRepository = perfilRepository;
         this.ofertaRepository = ofertaRepository;
         this.empresaRepository = empresaRepository;
         this.postulacionRepository = postulacionRepository;
+        this.passRepository = passRepository;   
     }
 
     public void darLike(Usuario usuario, Long ofertaId) {
@@ -45,6 +47,9 @@ public class LikeService {
                 .orElseThrow(() -> new ValidacionException("Oferta no encontrada"));
         if (likeRepository.findByPerfilAndOferta(perfil, oferta).isPresent()) {
             throw new ValidacionException("Ya has dado like a esta oferta");
+        }
+        if (passRepository.findByPerfilAndOferta(perfil, oferta).isPresent()) {
+            throw new ValidacionException("Ya has dado pass a esta oferta");
         }
         if (postulacionRepository.findByPostulanteAndOferta(perfil, oferta).isPresent()) {
             throw new ValidacionException("Ya has postulado a esta oferta");
@@ -80,6 +85,9 @@ public class LikeService {
         // Verificar si ya postuló
         if (postulacionRepository.findByPostulanteAndOferta(perfil, oferta).isPresent()) {
             throw new ValidacionException("Ya has interactuado con esta oferta");
+        }
+        if (passRepository.findByPerfilAndOferta(perfil, oferta).isPresent()) {
+            throw new ValidacionException("Ya has dado pass a esta oferta");
         }
 
         // Verificar límite diario (5 superlikes por día)
