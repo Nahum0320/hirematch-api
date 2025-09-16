@@ -1,8 +1,12 @@
+
 package com.hirematch.hirematch_api.controllers;
 
+import com.hirematch.hirematch_api.repository.FotoPerfilRepository;
+import java.util.Base64;
+
 import com.hirematch.hirematch_api.ValidacionException;
-import com.hirematch.hirematch_api.DTO.MatchResponse;
 import com.hirematch.hirematch_api.DTO.MatchUsuarioResponse;
+import com.hirematch.hirematch_api.DTO.MatchEmpresaResponse;
 import com.hirematch.hirematch_api.entity.*;
 import com.hirematch.hirematch_api.repository.PerfilRepository;
 import com.hirematch.hirematch_api.repository.SesionRepository;
@@ -21,6 +25,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/matches")
 public class MatchController {
 
+    private final FotoPerfilRepository fotoPerfilRepository;
+
     private final LikeService likeService;
 
     private final OfertaService ofertaService;
@@ -31,18 +37,19 @@ public class MatchController {
     private final PerfilRepository perfilRepository;
 
     public MatchController(MatchService matchService, TokenService tokenService,
-                           SesionRepository sesionRepository, PerfilRepository perfilRepository, OfertaService ofertaService, LikeService likeService) {
+                           SesionRepository sesionRepository, PerfilRepository perfilRepository, OfertaService ofertaService, LikeService likeService, FotoPerfilRepository fotoPerfilRepository) {
         this.matchService = matchService;
         this.tokenService = tokenService;
         this.sesionRepository = sesionRepository;
         this.perfilRepository = perfilRepository;
         this.ofertaService = ofertaService;
         this.likeService = likeService;
+        this.fotoPerfilRepository = fotoPerfilRepository;
     }
 
     // Obtener matches por oferta
     @GetMapping("/oferta/{ofertaId}")
-    public ResponseEntity<List<MatchResponse>> getMatchesByOferta(@PathVariable Long ofertaId,
+    public ResponseEntity<List<MatchEmpresaResponse>> getMatchesByOferta(@PathVariable Long ofertaId,
                                                                   @RequestHeader("Authorization") String authHeader) {
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
         verificarTipoPerfil(usuario, "EMPRESA");
@@ -51,14 +58,49 @@ public class MatchController {
             throw new ValidacionException("La oferta no pertenece a la empresa");
         }
         List<Match> matches = matchService.getMatchesByOfertaId(ofertaId);
-        //mapear a un DTO si es necesario
-
-
-        List<MatchResponse> matchResponses = matches.stream()
-                .map(match -> new MatchResponse(
-                        match.getId(), match.getLike().getId(), match.getEmpresa().getEmpresaId(), match.getFechaMatch()))
+        List<MatchEmpresaResponse> responses = matches.stream()
+                .map(match -> {
+                    var like = match.getLike();
+                    var postulante = like.getPerfil();
+                    var postulacionOpt = matchService.obtenerPostulacionPorLike(like);
+                    if (postulante != null && postulacionOpt.isPresent()) {
+                        var postulacion = postulacionOpt.get();
+                        MatchEmpresaResponse resp = new MatchEmpresaResponse();
+                        resp.setPostulacionId(postulacion.getId());
+                        resp.setOfertaId(postulacion.getOferta().getId());
+                        resp.setTituloOferta(postulacion.getOferta().getTitulo());
+                        resp.setDescripcionOferta(postulacion.getOferta().getDescripcion());
+                        resp.setUbicacionOferta(postulacion.getOferta().getUbicacion());
+                        resp.setFechaPostulacion(postulacion.getFechaPostulacion());
+                        resp.setEstado(postulacion.getEstado().getDescripcion());
+                        resp.setSuperLike(postulacion.isSuperLike());
+                        // Datos del usuario
+                        if (postulante.getUsuario() != null) {
+                            resp.setUsuarioId(postulante.getUsuario().getUsuarioId());
+                            resp.setNombreUsuario(postulante.getUsuario().getNombre());
+                            resp.setApellidoUsuario(postulante.getUsuario().getApellido());
+                            resp.setEmailUsuario(postulante.getUsuario().getEmail());
+                        }
+                        // Foto de perfil en base64 si existe
+                        var fotoOpt = fotoPerfilRepository.findByPerfil(postulante);
+                        if (fotoOpt.isPresent()) {
+                            String base64Image = Base64.getEncoder().encodeToString(fotoOpt.get().getFoto());
+                            resp.setFotoUrl("data:image/jpeg;base64," + base64Image);
+                        } else {
+                            resp.setFotoUrl(null);
+                        }
+                        return resp;
+                    } else {
+                        return null;
+                    }
+                })
+                .filter(p -> p != null)
                 .toList();
-        return ResponseEntity.ok(matchResponses);
+        return ResponseEntity.ok(responses);
+    // Obtener la postulación asociada a un like
+    // Este método asume que el MatchService tiene un método para esto
+    // Si no existe, debe implementarse en el servicio
+
     }
 
     // Crear un nuevo match (ejemplo)
@@ -121,8 +163,6 @@ public class MatchController {
         response.setTituloOferta(oferta.getTitulo());
         response.setDescripcionOferta(oferta.getDescripcion());
         response.setUbicacionOferta(oferta.getUbicacion());
-        response.setEmpresaNombre(oferta.getEmpresa().getNombreEmpresa());
-        response.setEmpresaDescripcion(oferta.getEmpresa().getDescripcion());
         response.setFechaPostulacion(postulacion.getFechaPostulacion());
         response.setEstado(postulacion.getEstado().getDescripcion());
         response.setSuperLike(postulacion.isSuperLike());

@@ -1,3 +1,4 @@
+
 package com.hirematch.hirematch_api.service;
 
 import com.hirematch.hirematch_api.entity.*;
@@ -15,6 +16,16 @@ import java.util.Optional;
 
 @Service
 public class MatchService {
+
+    /**
+     * Devuelve la postulación asociada a un like (perfil y oferta).
+     */
+    public Optional<PostulantePorOferta> obtenerPostulacionPorLike(Like like) {
+        if (like == null || like.getPerfil() == null || like.getOferta() == null) {
+            return Optional.empty();
+        }
+        return postulacionRepository.findByPostulanteAndOferta(like.getPerfil(), like.getOferta());
+    }
 
     private final MatchRepository matchRepository;
     private final LikeRepository likeRepository;
@@ -59,18 +70,22 @@ public class MatchService {
             System.out.println("Ya has hecho match con este postulante");
             throw new ValidacionException("Ya has hecho match con este postulante");
         }
-        Match match = new Match();
-        match.setLike(like);
-        match.setEmpresa(like.getOferta().getEmpresa());
-        match.setFechaMatch(LocalDateTime.now());
-        matchRepository.save(match);
-
-        // Actualizar estado en PostulantePorOferta
         Optional<PostulantePorOferta> optPostulacion = postulacionRepository.findByPostulanteAndOferta(like.getPerfil(), like.getOferta());
+
         if (optPostulacion.isPresent()) {
-            PostulantePorOferta postulacion = optPostulacion.get();
-            postulacion.promoverToMatch();
-            postulacionRepository.save(postulacion);
+            if (optPostulacion.get().getEstado() == EstadoPostulacion.PENDING) {
+                Match match = new Match();
+                match.setLike(like);
+                match.setEmpresa(like.getOferta().getEmpresa());
+                match.setFechaMatch(LocalDateTime.now());
+                matchRepository.save(match);
+                PostulantePorOferta postulacion = optPostulacion.get();
+                postulacion.promoverToMatch();
+                postulacionRepository.save(postulacion);
+            }
+            else {
+                throw new ValidacionException("La postulación no está en estado Pendiente");
+            }
         }
     }
 
