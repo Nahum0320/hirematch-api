@@ -13,6 +13,7 @@ import com.hirematch.hirematch_api.service.PasswordService;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "usuarios")
@@ -85,6 +86,10 @@ public class Usuario implements UserDetails {
         fechaRegistro = now;
         fechaCreacion = now;
         fechaExpiracionCodigo = now.plusMinutes(30);
+
+        if (this.llaveUnica == null) {
+            this.llaveUnica = UUID.randomUUID().toString();
+        }
 
         if (password != null) {
             this.passwordHash = PasswordService.encriptar(password);
