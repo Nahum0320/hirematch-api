@@ -96,4 +96,6 @@ public class MatchService {
             return postulacionRepository.findByUsuarioIdAndEstado(usuarioId, estado);
         }
     }
+
+
 }
