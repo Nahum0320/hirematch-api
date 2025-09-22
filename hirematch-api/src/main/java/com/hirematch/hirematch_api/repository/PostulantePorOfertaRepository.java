@@ -28,5 +28,6 @@ public interface PostulantePorOfertaRepository extends JpaRepository<PostulanteP
     List<PostulantePorOferta> findByUsuarioIdAndEstado(@Param("usuarioId") Long usuarioId, @Param("estado") EstadoPostulacion estado);
 
     List<PostulantePorOferta> findByPostulanteUsuarioUsuarioIdOrderByFechaPostulacionDesc(Long usuarioId);
-    
+
+    List<PostulantePorOferta> findByOfertaAndEstado(OfertaLaboral oferta, EstadoPostulacion estado);
 }

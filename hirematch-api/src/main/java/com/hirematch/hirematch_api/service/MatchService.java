@@ -73,7 +73,7 @@ public class MatchService {
         Optional<PostulantePorOferta> optPostulacion = postulacionRepository.findByPostulanteAndOferta(like.getPerfil(), like.getOferta());
 
         if (optPostulacion.isPresent()) {
-            if (optPostulacion.get().getEstado() == EstadoPostulacion.PENDING) {
+            if (optPostulacion.get().getEstado() == EstadoPostulacion.PENDING || optPostulacion.get().getEstado() == EstadoPostulacion.SUPERLIKE) {
                 Match match = new Match();
                 match.setLike(like);
                 match.setEmpresa(like.getOferta().getEmpresa());
@@ -96,4 +96,6 @@ public class MatchService {
             return postulacionRepository.findByUsuarioIdAndEstado(usuarioId, estado);
         }
     }
+
+
 }
