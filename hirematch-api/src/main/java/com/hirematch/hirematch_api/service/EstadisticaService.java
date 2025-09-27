@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 public class EstadisticaService {
@@ -158,6 +160,7 @@ public class EstadisticaService {
     private EstadisticaUsuarioResponse convertirAEstadisticaResponse(EstadisticaUsuario estadisticas) {
         EstadisticaUsuarioResponse response = new EstadisticaUsuarioResponse();
         response.setPerfilId(estadisticas.getPerfil().getPerfilId());
+        response.setTotalMatches(estadisticas.getTotalMatches());
         response.setTotalLikesDados(estadisticas.getTotalLikesDados());
         response.setTotalLikesRecibidos(estadisticas.getTotalLikesRecibidos());
         response.setTotalSuperlikesDados(estadisticas.getTotalSuperlikesDados());
@@ -166,9 +169,10 @@ public class EstadisticaService {
         response.setTotalRechazosRecibidos(estadisticas.getTotalRechazosRecibidos());
         response.setPerfilCompletado(estadisticas.getPerfilCompletado());
         response.setPorcentajePerfil(estadisticas.getPorcentajePerfil());
-        response.setDiasActivo(estadisticas.getDiasActivo());
+        response.setDiasActivo((int) ChronoUnit.DAYS.between(estadisticas.getFechaRegistro(), LocalDateTime.now()));
         response.setUltimaActividad(estadisticas.getUltimaActividad());
         response.setFechaRegistro(estadisticas.getFechaRegistro());
+        response.setFechaActualizacion(estadisticas.getFechaActualizacion());
 
         // Calcular estadísticas derivadas
         if (estadisticas.getTotalLikesDados() > 0) {
@@ -183,11 +187,40 @@ public class EstadisticaService {
             response.setPopularidad(0.0);
         }
 
+        int totalLikesDados = estadisticas.getTotalLikesDados() + estadisticas.getTotalSuperlikesDados();
+        int totalRespuestas = estadisticas.getTotalLikesRecibidos() + estadisticas.getTotalSuperlikesRecibidos() + estadisticas.getTotalMatches();
+        response.setTasaRespuesta(totalLikesDados > 0 ? (double) totalRespuestas / totalLikesDados : 0.0);
+
+        // Calcular rendimiento vs promedio
+        Double promedioMatches = estadisticaRepository.getPromedioMatches();
+        Double promedioLikesDados = estadisticaRepository.getPromedioLikesDados();
+        double tasaExitoPromedio = promedioMatches != null && promedioLikesDados != null && promedioLikesDados > 0
+                ? promedioMatches / promedioLikesDados
+                : 0.0;
+        double tasaExitoUsuario = response.getTasaExito();
+        if (tasaExitoUsuario > tasaExitoPromedio * 1.2) {
+            response.setRendimientoVsPromedio("Por encima del promedio");
+        } else if (tasaExitoUsuario < tasaExitoPromedio * 0.8) {
+            response.setRendimientoVsPromedio("Por debajo del promedio");
+        } else {
+            response.setRendimientoVsPromedio("En el promedio");
+        }
+
+        // Calcular posición en ranking
+        List<EstadisticaUsuario> topMatches = estadisticaRepository.findTopByMatches();
+        long totalUsuarios = estadisticaRepository.count();
+        int posicion = topMatches.indexOf(estadisticas) + 1;
+        response.setPosicionRanking(posicion > 0 && totalUsuarios > 0 ? (1.0 - (double) posicion / totalUsuarios) * 100 : 0.0);
+
         // Contar badges
         Long totalBadges = usuarioBadgeRepository.countBadgesByPerfil(estadisticas.getPerfil());
         response.setTotalBadges(totalBadges.intValue());
 
         return response;
+    }
+
+    public EstadisticaUsuarioRepository getEstadisticaUsuarioRepository() {
+        return estadisticaRepository;
     }
 
     public Integer calcularNivelUsuario(Perfil perfil) {
