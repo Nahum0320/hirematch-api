@@ -24,15 +24,18 @@ public class PassService {
     private final OfertaLaboralRepository ofertaRepository;
     private final LikeRepository likeRepository;
     private final PostulantePorOfertaRepository postulacionRepository;
+    private final EstadisticaService estadisticaService;
 
     public PassService(PassRepository passRepository, PerfilRepository perfilRepository,
                        OfertaLaboralRepository ofertaRepository, LikeRepository likeRepository,
-                       PostulantePorOfertaRepository postulacionRepository) {
+                       PostulantePorOfertaRepository postulacionRepository,
+                       EstadisticaService estadisticaService) {
         this.passRepository = passRepository;
         this.perfilRepository = perfilRepository;
         this.ofertaRepository = ofertaRepository;
         this.likeRepository = likeRepository;
         this.postulacionRepository = postulacionRepository;
+        this.estadisticaService = estadisticaService;
     }
 
     public void darPass(Usuario usuario, Long ofertaId) {
@@ -57,6 +60,9 @@ public class PassService {
         pass.setOferta(oferta);
         pass.setFechaPass(LocalDateTime.now());
         passRepository.save(pass);
+
+        // Actualizar estadísticas
+        estadisticaService.actualizarEstadisticaRechazo(perfil, oferta.getEmpresa().getPerfil());
     }
 
     public Optional<Pass> findById(Long passId) {
