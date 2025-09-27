@@ -74,6 +74,10 @@ public class LikeService {
         // Incrementar aplicaciones recibidas
         oferta.incrementarAplicaciones();
         ofertaRepository.save(oferta);
+
+        // Actualizar estadísticas
+        estadisticaService.actualizarEstadisticaLikeDado(perfil);
+        estadisticaService.actualizarEstadisticaLikeRecibido(oferta.getEmpresa().getPerfil());
     }
 
     public void darSuperLike(Usuario usuario, Long ofertaId) {

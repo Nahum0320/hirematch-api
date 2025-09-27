@@ -84,7 +84,10 @@ public class PassService {
         if(postulacion.getEstado() == EstadoPostulacion.PENDING) {
             postulacion.setEstado(EstadoPostulacion.REJECTED);
             postulacionRepository.save(postulacion);
+            // Actualizar estadísticas
+            estadisticaService.actualizarEstadisticaRechazo(perfil, oferta.getEmpresa().getPerfil());
         }    
+
     }
 
 }

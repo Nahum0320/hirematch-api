@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -30,25 +31,25 @@ public class BadgeService {
         List<Badge> nuevosBadges = new ArrayList<>();
         EstadisticaUsuario estadisticas = obtenerOCrearEstadisticas(perfil);
 
-        // Verificar badges de primer match
-        if (estadisticas.getTotalMatches() == 1 && !tieneBadge(perfil, "PRIMER_MATCH")) {
-            Badge badge = badgeRepository.findByNombreAndActivoTrue("PRIMER_MATCH")
-                    .orElseThrow(() -> new RuntimeException("Badge PRIMER_MATCH no encontrado"));
-            otorgarBadge(perfil, badge);
-            nuevosBadges.add(badge);
-        }
+        // Calcular días activo dinámicamente
+        int diasActivo = (int) ChronoUnit.DAYS.between(estadisticas.getFechaRegistro(), LocalDateTime.now());
 
-        // Verificar badges de cantidad de matches
-        verificarBadgesPorCantidad(perfil, Badge.TipoBadge.MATCHES_CANTIDAD, 
-                estadisticas.getTotalMatches(), nuevosBadges);
+        // Verificar primers con >= para robustez
+        verificarBadgesPorCantidad(perfil, Badge.TipoBadge.PRIMER_MATCH, estadisticas.getTotalMatches(), nuevosBadges);
+        verificarBadgesPorCantidad(perfil, Badge.TipoBadge.PRIMER_LIKE, estadisticas.getTotalLikesDados(), nuevosBadges);
+        verificarBadgesPorCantidad(perfil, Badge.TipoBadge.PRIMER_SUPERLIKE, estadisticas.getTotalSuperlikesDados(), nuevosBadges);
 
-        // Verificar badges de likes
-        verificarBadgesPorCantidad(perfil, Badge.TipoBadge.LIKES_CANTIDAD, 
-                estadisticas.getTotalLikesDados(), nuevosBadges);
+        // Verificar cantidades
+        verificarBadgesPorCantidad(perfil, Badge.TipoBadge.MATCHES_CANTIDAD, estadisticas.getTotalMatches(), nuevosBadges);
+        verificarBadgesPorCantidad(perfil, Badge.TipoBadge.LIKES_CANTIDAD, estadisticas.getTotalLikesDados(), nuevosBadges);
+        verificarBadgesPorCantidad(perfil, Badge.TipoBadge.SUPERLIKES_CANTIDAD, estadisticas.getTotalSuperlikesDados(), nuevosBadges);
 
-        // Verificar badges de superlikes
-        verificarBadgesPorCantidad(perfil, Badge.TipoBadge.SUPERLIKES_CANTIDAD, 
-                estadisticas.getTotalSuperlikesDados(), nuevosBadges);
+        // Verificar veterano (días desde registro)
+        verificarBadgesPorCantidad(perfil, Badge.TipoBadge.VETERANO, diasActivo, nuevosBadges);
+
+        // Verificar popularidad (likes + superlikes recibidos)
+        int popularidad = estadisticas.getTotalLikesRecibidos() + estadisticas.getTotalSuperlikesRecibidos();
+        verificarBadgesPorCantidad(perfil, Badge.TipoBadge.POPULARIDAD, popularidad, nuevosBadges);
 
         // Verificar badge de perfil completo
         if (estadisticas.getPerfilCompletado() && !tieneBadge(perfil, "PERFIL_COMPLETO")) {
@@ -61,6 +62,11 @@ public class BadgeService {
         return crearRespuestaBadgeObtenido(nuevosBadges);
     }
 
+    @Transactional
+    public void marcarBadgesComoNotificados(Perfil perfil) {
+        usuarioBadgeRepository.marcarBadgesComoNotificados(perfil);
+    }
+    
     private void verificarBadgesPorCantidad(Perfil perfil, Badge.TipoBadge tipo, 
                                            Integer cantidad, List<Badge> nuevosBadges) {
         List<Badge> badgesDisponibles = badgeRepository.findBadgesDisponiblesByTipoAndValor(tipo, cantidad);

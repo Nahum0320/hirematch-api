@@ -70,11 +70,6 @@ public class BadgeDataSeeding implements CommandLineRunner {
                   "15 superlikes muestran tu compromiso", 
                   "star", "#FF5722", Badge.TipoBadge.SUPERLIKES_CANTIDAD, 15);
 
-        // Badge de perfil completo
-        crearBadge("PERFIL_COMPLETO", "Perfil Destacado", 
-                  "Tu perfil está completo y optimizado", 
-                  "verified_user", "#4CAF50", Badge.TipoBadge.PERFIL_COMPLETO, null);
-
         // Badges especiales
         crearBadge("VETERANO", "Veterano", 
                   "30 días activo en la plataforma", 
