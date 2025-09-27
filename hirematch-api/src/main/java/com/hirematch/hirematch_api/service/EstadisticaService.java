@@ -22,6 +22,9 @@ public class EstadisticaService {
     @Autowired
     private UsuarioBadgeRepository usuarioBadgeRepository;
 
+    @Autowired
+    private BadgeService badgeService;
+
     public EstadisticaUsuarioResponse obtenerEstadisticasUsuario(Perfil perfil) {
         EstadisticaUsuario estadisticas = estadisticaRepository.findByPerfil(perfil)
                 .orElseGet(() -> crearEstadisticasIniciales(perfil));
@@ -35,6 +38,7 @@ public class EstadisticaService {
         estadisticas.setTotalMatches(estadisticas.getTotalMatches() + 1);
         estadisticas.setUltimaActividad(LocalDateTime.now());
         estadisticaRepository.save(estadisticas);
+        badgeService.verificarYOtorgarBadges(perfil);
     }
 
     @Transactional
@@ -43,6 +47,7 @@ public class EstadisticaService {
         estadisticas.setTotalLikesDados(estadisticas.getTotalLikesDados() + 1);
         estadisticas.setUltimaActividad(LocalDateTime.now());
         estadisticaRepository.save(estadisticas);
+        badgeService.verificarYOtorgarBadges(perfil);
     }
 
     @Transactional
@@ -51,6 +56,7 @@ public class EstadisticaService {
         estadisticas.setTotalLikesRecibidos(estadisticas.getTotalLikesRecibidos() + 1);
         estadisticas.setUltimaActividad(LocalDateTime.now());
         estadisticaRepository.save(estadisticas);
+        badgeService.verificarYOtorgarBadges(perfil);
     }
 
     @Transactional
@@ -59,6 +65,7 @@ public class EstadisticaService {
         estadisticas.setTotalSuperlikesDados(estadisticas.getTotalSuperlikesDados() + 1);
         estadisticas.setUltimaActividad(LocalDateTime.now());
         estadisticaRepository.save(estadisticas);
+        badgeService.verificarYOtorgarBadges(perfil);
     }
 
     @Transactional
@@ -67,6 +74,7 @@ public class EstadisticaService {
         estadisticas.setTotalSuperlikesRecibidos(estadisticas.getTotalSuperlikesRecibidos() + 1);
         estadisticas.setUltimaActividad(LocalDateTime.now());
         estadisticaRepository.save(estadisticas);
+        badgeService.verificarYOtorgarBadges(perfil);
     }
 
     @Transactional
@@ -81,6 +89,8 @@ public class EstadisticaService {
         EstadisticaUsuario estadisticasQueRecibe = obtenerOCrearEstadisticas(perfilQueRecibeRechazo);
         estadisticasQueRecibe.setTotalRechazosRecibidos(estadisticasQueRecibe.getTotalRechazosRecibidos() + 1);
         estadisticaRepository.save(estadisticasQueRecibe);
+        badgeService.verificarYOtorgarBadges(perfilQueDaRechazo);
+        badgeService.verificarYOtorgarBadges(perfilQueRecibeRechazo);
     }
 
     @Transactional
@@ -232,7 +242,6 @@ public class EstadisticaService {
         puntos += estadisticas.getTotalMatches() * 10;
         puntos += estadisticas.getTotalLikesDados() * 2;
         puntos += estadisticas.getTotalSuperlikesDados() * 5;
-        puntos += estadisticas.getPerfilCompletado() ? 50 : 0;
         puntos += usuarioBadgeRepository.countBadgesByPerfil(perfil).intValue() * 20;
 
         // Convertir puntos a nivel (cada 100 puntos = 1 nivel)
