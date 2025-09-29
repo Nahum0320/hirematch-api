@@ -2,11 +2,15 @@ package com.hirematch.hirematch_api.service;
 import com.hirematch.hirematch_api.DTO.CrearOfertaRequest;
 import com.hirematch.hirematch_api.DTO.OfertaResponse;
 import com.hirematch.hirematch_api.DTO.OfertaFeedResponse;
+import com.hirematch.hirematch_api.DTO.EstadisticasOfertaResponse;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.entity.*;
 import com.hirematch.hirematch_api.repository.EmpresaRepository;
 import com.hirematch.hirematch_api.repository.OfertaLaboralRepository;
 import com.hirematch.hirematch_api.repository.PerfilRepository;
+import com.hirematch.hirematch_api.repository.PostulantePorOfertaRepository;
+import com.hirematch.hirematch_api.repository.PassRepository;
+import com.hirematch.hirematch_api.repository.ChatRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,10 +23,17 @@ public class OfertaService {
     private final OfertaLaboralRepository ofertaRepository;
     private final EmpresaRepository empresaRepository;
     private final PerfilRepository perfilRepository;
-    public OfertaService(OfertaLaboralRepository ofertaRepository, EmpresaRepository empresaRepository, PerfilRepository perfilRepository) {
+    private final PostulantePorOfertaRepository postulantePorOfertaRepository;
+    private final PassRepository passRepository;
+    private final ChatRepository chatRepository;
+
+    public OfertaService(OfertaLaboralRepository ofertaRepository, EmpresaRepository empresaRepository, PerfilRepository perfilRepository, PostulantePorOfertaRepository postulantePorOfertaRepository, PassRepository passRepository, ChatRepository chatRepository) {
         this.ofertaRepository = ofertaRepository;
         this.empresaRepository = empresaRepository;
         this.perfilRepository = perfilRepository;
+        this.postulantePorOfertaRepository = postulantePorOfertaRepository;
+        this.passRepository = passRepository;
+        this.chatRepository = chatRepository;
     }
     public OfertaResponse crearOferta(CrearOfertaRequest request) {
         return crearOferta(request, null);
@@ -318,5 +329,71 @@ public class OfertaService {
             throw new ValidacionException("No tiene permiso para eliminar esta oferta");
         }
         ofertaRepository.delete(oferta);
+    }
+    public EstadisticasOfertaResponse obtenerEstadisticasOferta(Long ofertaId, Usuario usuario) {
+        OfertaLaboral oferta = ofertaRepository.findById(ofertaId)
+                .orElseThrow(() -> new ValidacionException("Oferta no encontrada"));
+
+        if (!oferta.getEmpresa().getUsuario().getUsuarioId().equals(usuario.getUsuarioId())) {
+            throw new ValidacionException("No tienes permiso para ver las estadísticas de esta oferta");
+        }
+
+        // Obtener postulaciones, passes y chats
+        List<PostulantePorOferta> postulaciones = postulantePorOfertaRepository.findByOfertaOrderBySuperLikeDescFechaPostulacionDesc(oferta);
+        List<Pass> passes = passRepository.findByOferta_Id(oferta.getId());
+        List<Chat> chats = chatRepository.findByOferta_Id(oferta.getId());
+
+
+        // Crear el DTO y asignar todos los campos
+        EstadisticasOfertaResponse response = new EstadisticasOfertaResponse();
+
+        // ID de la oferta
+        response.setOfertaId(ofertaId);
+
+        // Título y descripción de la oferta
+        response.setTitulo(oferta.getTitulo());
+        response.setDescripcion(oferta.getDescripcion());
+
+        // Estadísticas de postulaciones - TODAS las postulaciones, no solo superlikes
+        int totalPostulaciones = postulaciones.size(); // Total de personas que se postularon
+        int totalSuperlikes = (int) postulaciones.stream().filter(PostulantePorOferta::isSuperLike).count(); // Postulaciones con superlike
+        int totalMatches = (int) postulaciones.stream().filter(p -> p.getEstado() == EstadoPostulacion.MATCHED).count();
+        int totalRechazosEmpresa = (int) postulaciones.stream().filter(p -> p.getEstado() == EstadoPostulacion.REJECTED).count();
+        int totalContactados = chats.size(); // Los contactados son los que tienen chats creados
+
+        response.setTotalPostulaciones(totalPostulaciones);
+        response.setTotalMatches(totalMatches);
+        response.setTotalSuperlikes(totalSuperlikes);
+        response.setTotalRechazosEmpresa(totalRechazosEmpresa);
+        response.setTotalRechazosPostulante(passes.size()); // Passes = postulantes que rechazaron la oferta
+        response.setTotalContactados(totalContactados);
+
+        // Estadísticas de la oferta
+        response.setVistasOferta(oferta.getVistas());
+        response.setVacantesDisponibles(oferta.getVacantesDisponibles());
+        response.setEstadoOferta(oferta.getEstado());
+        response.setNivelExperiencia(oferta.getNivelExperiencia());
+        response.setTipoTrabajo(oferta.getTipoTrabajo());
+        response.setTipoContrato(oferta.getTipoContrato());
+
+        // Estadísticas de actividad
+        response.setDiasActiva(oferta.getFechaPublicacion() != null ?
+            (int) ChronoUnit.DAYS.between(oferta.getFechaPublicacion(), LocalDateTime.now()) : 0);
+        response.setFechaCreacion(oferta.getFechaPublicacion());
+        response.setFechaActualizacion(oferta.getFechaActualizacion());
+
+        // Estadísticas calculadas
+        response.setTasaAceptacion(totalPostulaciones > 0 ? (double) totalMatches / totalPostulaciones : 0.0);
+
+        response.setTasaRechazoEmpresa(totalPostulaciones > 0 ? (double)
+        (totalRechazosEmpresa) / totalPostulaciones : 0.0);
+
+        int totalInteracciones = totalPostulaciones + passes.size();
+        response.setTasaRechazo(totalInteracciones > 0 ?
+            (double) passes.size() / totalInteracciones : 0.0);
+
+        response.setTasaContacto(totalMatches > 0 ? (double) totalContactados / totalMatches : 0.0);
+
+        return response;
     }
 }

@@ -1,6 +1,7 @@
 package com.hirematch.hirematch_api.controllers;
 
 import com.hirematch.hirematch_api.DTO.CrearOfertaRequest;
+import com.hirematch.hirematch_api.DTO.EstadisticasOfertaResponse;
 import com.hirematch.hirematch_api.DTO.OfertaResponse;
 import com.hirematch.hirematch_api.DTO.OfertaFeedResponse;
 import com.hirematch.hirematch_api.ValidacionException;
@@ -17,6 +18,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @RestController
 @RequestMapping("/ofertas")
@@ -179,4 +183,21 @@ public class OfertaController {
         ofertaService.eliminarOferta(id, usuario);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{id}/estadisticas")
+    public ResponseEntity<EstadisticasOfertaResponse> getEstadisticas(@PathVariable Long id,
+                                   @RequestHeader("Authorization") String authHeader) {
+    //verificar que sea empresa
+        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+        verificarTipoPerfil(usuario, "EMPRESA");
+
+    //verificar que la oferta pertenezca a la empresa
+    if (!ofertaService.perteneceAUsuario(id, usuario)) {
+        throw new ValidacionException("La oferta no pertenece a la empresa");
+    }
+
+    // Lógica para obtener estadísticas de la oferta
+    return ResponseEntity.ok(ofertaService.obtenerEstadisticasOferta(id, usuario));
+}
+
 }

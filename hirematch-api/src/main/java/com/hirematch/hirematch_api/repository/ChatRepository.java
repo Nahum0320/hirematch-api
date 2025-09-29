@@ -18,4 +18,6 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
     List<Chat> findByPostulante(Perfil postulante);
 
     List<Chat> findByEmpresa(Empresa empresa);
+
+    List<Chat> findByOferta_Id(Long ofertaId);
 }
