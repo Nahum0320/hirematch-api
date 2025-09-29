@@ -30,22 +30,15 @@ public class EstadisticasOfertaResponse {
     private TipoTrabajo tipoTrabajo;
     private TipoContrato tipoContrato;
 
-
     // Estadísticas de actividad
     private Integer diasActiva;
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
 
-
     // Estadísticas calculadas
     private Double tasaAceptacion; // matches / postulaciones
-    private Double tasaRechazos;
+    private Double tasaRechazoEmpresa; // rechazos de la empresa / matches
     private Double tasaRechazo; // rechazos del usuario / postulaciones
     private Double tasaContacto; // contactados / matches
     private NivelExperiencia nivelExperienciaPromedio;
-
-
-    // Comparaciones con promedios
-    private String rendimientoVsPromedio; // "Por encima del promedio", etc.
-    private Double posicionRanking; // Percentil de la oferta
 }
