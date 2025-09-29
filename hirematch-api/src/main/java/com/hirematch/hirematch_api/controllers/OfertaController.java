@@ -3,6 +3,7 @@ package com.hirematch.hirematch_api.controllers;
 import com.hirematch.hirematch_api.DTO.CrearOfertaRequest;
 import com.hirematch.hirematch_api.DTO.OfertaResponse;
 import com.hirematch.hirematch_api.DTO.OfertaFeedResponse;
+import com.hirematch.hirematch_api.DTO.EstadisticasOfertaResponse;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.entity.Perfil;
 import com.hirematch.hirematch_api.entity.Sesion;
@@ -178,5 +179,16 @@ public class OfertaController {
         verificarTipoPerfil(usuario, "EMPRESA");
         ofertaService.eliminarOferta(id, usuario);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/estadisticas")
+    public ResponseEntity<EstadisticasOfertaResponse> obtenerEstadisticasOferta(@PathVariable Long id,
+                                                                               @RequestHeader("Authorization") String authHeader) {
+        // Obtener usuario autenticado y verificar que sea empresa
+        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+        verificarTipoPerfil(usuario, "EMPRESA");
+
+        EstadisticasOfertaResponse estadisticas = ofertaService.obtenerEstadisticasOferta(id, usuario);
+        return ResponseEntity.ok(estadisticas);
     }
 }

@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface PassRepository extends JpaRepository<Pass, Long> {
     Optional<Pass> findByPerfilAndOferta(Perfil perfil, OfertaLaboral oferta);
     List<Pass> findByPerfil(Perfil perfil);
+    List<Pass> findByOferta(OfertaLaboral oferta);
 }

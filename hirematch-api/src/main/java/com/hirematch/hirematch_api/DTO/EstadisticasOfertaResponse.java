@@ -1,0 +1,51 @@
+package com.hirematch.hirematch_api.DTO;
+
+import com.hirematch.hirematch_api.entity.EstadoOferta;
+import com.hirematch.hirematch_api.entity.NivelExperiencia;
+import com.hirematch.hirematch_api.entity.TipoContrato;
+import com.hirematch.hirematch_api.entity.TipoTrabajo;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class EstadisticasOfertaResponse {
+    private Long ofertaId;
+
+    // Estadísticas de postulaciones
+    private Integer totalPostulaciones;
+    private Integer totalMatches;
+    private Integer totalSuperlikes;
+    private Integer totalRechazosEmpresa;
+    private Integer totalRechazosPostulante;
+    private Integer totalContactados;
+    private Integer vistasOferta;
+    private Integer vacantesDisponibles;
+    private EstadoOferta estadoOferta;
+    private NivelExperiencia nivelExperiencia;
+    private TipoTrabajo tipoTrabajo;
+    private TipoContrato tipoContrato;
+
+
+    // Estadísticas de actividad
+    private Integer diasActiva;
+    private LocalDateTime fechaCreacion;
+    private LocalDateTime fechaActualizacion;
+
+
+    // Estadísticas calculadas
+    private Double tasaAceptacion; // matches / postulaciones
+    private Double tasaRechazos;
+    private Double tasaRechazo; // rechazos del usuario / postulaciones
+    private Double tasaContacto; // contactados / matches
+    private NivelExperiencia nivelExperienciaPromedio;
+
+
+    // Comparaciones con promedios
+    private String rendimientoVsPromedio; // "Por encima del promedio", etc.
+    private Double posicionRanking; // Percentil de la oferta
+}
