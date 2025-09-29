@@ -32,15 +32,18 @@ public class MatchService {
     private final OfertaLaboralRepository ofertaRepository;
     private final PerfilRepository perfilRepository;
     private final PostulantePorOfertaRepository postulacionRepository;
+    private final EstadisticaService estadisticaService;
 
     public MatchService(MatchRepository matchRepository, LikeRepository likeRepository,
                         OfertaLaboralRepository ofertaRepository, PerfilRepository perfilRepository,
-                        PostulantePorOfertaRepository postulacionRepository) {
+                        PostulantePorOfertaRepository postulacionRepository,
+                        EstadisticaService estadisticaService) {
         this.matchRepository = matchRepository;
         this.likeRepository = likeRepository;
         this.ofertaRepository = ofertaRepository;
         this.perfilRepository = perfilRepository;
         this.postulacionRepository = postulacionRepository;
+        this.estadisticaService = estadisticaService;
     }
 
     public List<Match> getMatchesByOfertaId(Long ofertaId) {
@@ -82,6 +85,10 @@ public class MatchService {
                 PostulantePorOferta postulacion = optPostulacion.get();
                 postulacion.promoverToMatch();
                 postulacionRepository.save(postulacion);
+
+                // Actualizar estadísticas
+                estadisticaService.actualizarEstadisticaMatch(perfil); // Empresa
+                estadisticaService.actualizarEstadisticaMatch(like.getPerfil()); // Postulante
             }
             else {
                 throw new ValidacionException("La postulación no está en estado Pendiente");
@@ -96,4 +103,6 @@ public class MatchService {
             return postulacionRepository.findByUsuarioIdAndEstado(usuarioId, estado);
         }
     }
+
+
 }

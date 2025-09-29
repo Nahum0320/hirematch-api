@@ -23,6 +23,10 @@ public class Empresa {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "perfil_id", nullable = false, unique = true)
+    private Perfil perfil;
+
     @NotBlank(message = "El nombre de la empresa es obligatorio")
     @Size(max = 150, message = "El nombre de la empresa no puede exceder 150 caracteres")
     @Column(name = "nombre_empresa", nullable = false, length = 150)

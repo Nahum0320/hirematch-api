@@ -186,6 +186,7 @@ public ResponseEntity<ProfileResponse> getMyProfile(@AuthenticationPrincipal Usu
             empresa.setNombreEmpresa(request.getNombreEmpresa().trim());
             empresa.setDescripcion(savedPerfil.getDescripcion());
             empresa.setSitioWeb(savedPerfil.getSitioWeb());
+            empresa.setPerfil(savedPerfil);
             empresaRepository.save(empresa);
         }
 

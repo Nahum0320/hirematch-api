@@ -25,16 +25,19 @@ public class LikeService {
     private final EmpresaRepository empresaRepository;
     private final PostulantePorOfertaRepository postulacionRepository;
     private final PassRepository passRepository;
+    private final EstadisticaService estadisticaService;
 
     public LikeService(LikeRepository likeRepository, PerfilRepository perfilRepository,
                        OfertaLaboralRepository ofertaRepository, EmpresaRepository empresaRepository,
-                       PostulantePorOfertaRepository postulacionRepository, PassRepository passRepository) {
+                       PostulantePorOfertaRepository postulacionRepository, PassRepository passRepository,
+                       EstadisticaService estadisticaService) {
         this.likeRepository = likeRepository;
         this.perfilRepository = perfilRepository;
         this.ofertaRepository = ofertaRepository;
         this.empresaRepository = empresaRepository;
         this.postulacionRepository = postulacionRepository;
-        this.passRepository = passRepository;   
+        this.passRepository = passRepository;
+        this.estadisticaService = estadisticaService;
     }
 
     public void darLike(Usuario usuario, Long ofertaId) {
@@ -115,6 +118,10 @@ public class LikeService {
         // Incrementar aplicaciones recibidas
         oferta.incrementarAplicaciones();
         ofertaRepository.save(oferta);
+
+        // Actualizar estadísticas
+        estadisticaService.actualizarEstadisticaSuperlikeDado(perfil);
+        estadisticaService.actualizarEstadisticaSuperlikeRecibido(oferta.getEmpresa().getPerfil());
     }
 
     public Page<ProfileResponse> getMatchesForEmpresa(Usuario usuarioEmpresa, Pageable pageable) {
