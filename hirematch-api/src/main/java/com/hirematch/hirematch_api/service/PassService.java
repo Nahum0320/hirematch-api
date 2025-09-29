@@ -90,4 +90,10 @@ public class PassService {
 
     }
 
+    public List<Pass> obtenerPassPorOferta(Long ofertaId) {
+        OfertaLaboral oferta = ofertaRepository.findById(ofertaId)
+                .orElseThrow(() -> new ValidacionException("Oferta no encontrada"));
+        return passRepository.findByOferta_Id(oferta.getId());
+    }
+
 }

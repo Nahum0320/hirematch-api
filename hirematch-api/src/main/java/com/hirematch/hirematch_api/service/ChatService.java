@@ -188,4 +188,8 @@ public class ChatService {
         response.setFechaEnvio(mensaje.getFechaEnvio());
         return response;
     }
+
+    private List<Chat> findByOferta_Id(Long ofertaId) {
+        return chatRepository.findByOferta_Id(ofertaId);
+    }
 }
