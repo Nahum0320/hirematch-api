@@ -3,6 +3,7 @@ import com.hirematch.hirematch_api.DTO.CrearOfertaRequest;
 import com.hirematch.hirematch_api.DTO.OfertaResponse;
 import com.hirematch.hirematch_api.DTO.OfertaFeedResponse;
 import com.hirematch.hirematch_api.DTO.EstadisticasOfertaResponse;
+import com.hirematch.hirematch_api.DTO.EstadisticasEmpresaResponse;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.entity.*;
 import com.hirematch.hirematch_api.repository.EmpresaRepository;
@@ -11,6 +12,7 @@ import com.hirematch.hirematch_api.repository.PerfilRepository;
 import com.hirematch.hirematch_api.repository.PostulantePorOfertaRepository;
 import com.hirematch.hirematch_api.repository.PassRepository;
 import com.hirematch.hirematch_api.repository.ChatRepository;
+import com.hirematch.hirematch_api.repository.UsuarioBadgeRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 @Service
 public class OfertaService {
     private final OfertaLaboralRepository ofertaRepository;
@@ -26,14 +29,16 @@ public class OfertaService {
     private final PostulantePorOfertaRepository postulantePorOfertaRepository;
     private final PassRepository passRepository;
     private final ChatRepository chatRepository;
+    private final UsuarioBadgeRepository usuarioBadgeRepository;
 
-    public OfertaService(OfertaLaboralRepository ofertaRepository, EmpresaRepository empresaRepository, PerfilRepository perfilRepository, PostulantePorOfertaRepository postulantePorOfertaRepository, PassRepository passRepository, ChatRepository chatRepository) {
+    public OfertaService(OfertaLaboralRepository ofertaRepository, EmpresaRepository empresaRepository, PerfilRepository perfilRepository, PostulantePorOfertaRepository postulantePorOfertaRepository, PassRepository passRepository, ChatRepository chatRepository, UsuarioBadgeRepository usuarioBadgeRepository) {
         this.ofertaRepository = ofertaRepository;
         this.empresaRepository = empresaRepository;
         this.perfilRepository = perfilRepository;
         this.postulantePorOfertaRepository = postulantePorOfertaRepository;
         this.passRepository = passRepository;
         this.chatRepository = chatRepository;
+        this.usuarioBadgeRepository = usuarioBadgeRepository;
     }
     public OfertaResponse crearOferta(CrearOfertaRequest request) {
         return crearOferta(request, null);
@@ -395,5 +400,158 @@ public class OfertaService {
         response.setTasaContacto(totalMatches > 0 ? (double) totalContactados / totalMatches : 0.0);
 
         return response;
+    }
+
+    public EstadisticasEmpresaResponse obtenerEstadisticasEmpresa(Usuario usuario) {
+        Empresa empresa = empresaRepository.findByUsuario(usuario)
+                .orElseThrow(() -> new ValidacionException("No se encontró empresa asociada al usuario"));
+
+        return calcularEstadisticasEmpresa(empresa);
+    }
+
+    private EstadisticasEmpresaResponse calcularEstadisticasEmpresa(Empresa empresa) {
+        // Obtener todas las ofertas de la empresa
+        List<OfertaLaboral> ofertas = ofertaRepository.findByEmpresaOrderByFechaPublicacionDesc(empresa, org.springframework.data.domain.Pageable.unpaged()).getContent();
+        
+        // Crear el DTO y asignar información básica
+        EstadisticasEmpresaResponse response = new EstadisticasEmpresaResponse();
+        
+        response.setEmpresaId(empresa.getEmpresaId());
+        response.setNombreEmpresa(empresa.getNombreEmpresa());
+        response.setDescripcion(empresa.getDescripcion());
+        response.setSitioWeb(empresa.getSitioWeb());
+        
+        // Estadísticas de ofertas
+        response.setTotalOfertas(ofertas.size());
+        response.setOfertasActivas((int) ofertas.stream()
+                .filter(o -> o.getEstado() == EstadoOferta.ACTIVA).count());
+        response.setOfertasInactivas((int) ofertas.stream()
+                .filter(o -> o.getEstado() == EstadoOferta.PAUSADA || o.getEstado() == EstadoOferta.CERRADA).count());
+        response.setOfertasDestacadas((int) ofertas.stream()
+                .filter(o -> o.getDestacada() != null && o.getDestacada()).count());
+        
+        // Estadísticas agregadas de todas las ofertas
+        int totalPostulaciones = 0;
+        int totalMatches = 0;
+        int totalSuperlikes = 0;
+        int totalRechazosEmpresa = 0;
+        int totalRechazosPostulante = 0;
+        int totalContactados = 0;
+        int totalVistas = 0;
+        int totalVacantes = 0;
+        int totalDiasActivos = 0;
+        
+        for (OfertaLaboral oferta : ofertas) {
+            List<PostulantePorOferta> postulaciones = postulantePorOfertaRepository
+                    .findByOfertaOrderBySuperLikeDescFechaPostulacionDesc(oferta);
+            List<Pass> passes = passRepository.findByOferta_Id(oferta.getId());
+            List<Chat> chats = chatRepository.findByOferta_Id(oferta.getId());
+            
+            totalPostulaciones += postulaciones.size();
+            totalMatches += (int) postulaciones.stream()
+                    .filter(p -> p.getEstado() == EstadoPostulacion.MATCHED).count();
+            totalSuperlikes += (int) postulaciones.stream()
+                    .filter(PostulantePorOferta::isSuperLike).count();
+            totalRechazosEmpresa += (int) postulaciones.stream()
+                    .filter(p -> p.getEstado() == EstadoPostulacion.REJECTED).count();
+            totalRechazosPostulante += passes.size();
+            totalContactados += chats.size();
+            totalVistas += oferta.getVistas() != null ? oferta.getVistas() : 0;
+            totalVacantes += oferta.getVacantesDisponibles() != null ? oferta.getVacantesDisponibles() : 0;
+            
+            // Calcular días activos de cada oferta
+            if (oferta.getFechaPublicacion() != null) {
+                totalDiasActivos += (int) ChronoUnit.DAYS.between(oferta.getFechaPublicacion(), LocalDateTime.now());
+            }
+        }
+        
+        response.setTotalPostulaciones(totalPostulaciones);
+        response.setTotalMatches(totalMatches);
+        response.setTotalSuperlikes(totalSuperlikes);
+        response.setTotalRechazosEmpresa(totalRechazosEmpresa);
+        response.setTotalRechazosPostulante(totalRechazosPostulante);
+        response.setTotalContactados(totalContactados);
+        response.setTotalVistasOfertas(totalVistas);
+        response.setTotalVacantesDisponibles(totalVacantes);
+        
+        // Estadísticas de actividad
+        LocalDateTime fechaRegistro = empresa.getUsuario().getFechaRegistro();
+        response.setFechaRegistro(fechaRegistro);
+        response.setDiasActiva(totalDiasActivos); // Suma de días activos de todas las ofertas
+        
+        // Buscar la última actividad (última actualización de ofertas)
+        Optional<LocalDateTime> ultimaActividad = ofertas.stream()
+                .map(OfertaLaboral::getFechaActualizacion)
+                .filter(fecha -> fecha != null)
+                .max(LocalDateTime::compareTo);
+        response.setUltimaActividad(ultimaActividad.orElse(fechaRegistro));
+        
+        // Estadísticas calculadas
+        response.setTasaAceptacion(totalPostulaciones > 0 ? 
+                (double) totalMatches / totalPostulaciones : 0.0);
+        
+        response.setTasaRechazoEmpresa(totalPostulaciones > 0 ? 
+                (double) totalRechazosEmpresa / totalPostulaciones : 0.0);
+        
+        int totalInteracciones = totalPostulaciones + totalRechazosPostulante;
+        response.setTasaRechazo(totalInteracciones > 0 ? 
+                (double) totalRechazosPostulante / totalInteracciones : 0.0);
+        
+        response.setTasaContacto(totalMatches > 0 ? 
+                (double) totalContactados / totalMatches : 0.0);
+        
+        // Estadísticas de perfil de empresa
+        Integer porcentajePerfil = calcularPorcentajePerfilEmpresa(empresa);
+        response.setPorcentajePerfil(porcentajePerfil);
+        response.setPerfilCompletado(porcentajePerfil >= 80);
+        
+        // Índice de engagement
+        response.setIndiceEngagement(totalVistas > 0 ? 
+                (double) (totalMatches + totalContactados) / totalVistas : 0.0);
+        
+        // Contar badges
+        Long totalBadges = usuarioBadgeRepository.countBadgesByPerfil(empresa.getPerfil());
+        response.setTotalBadges(totalBadges.intValue());
+        
+        return response;
+    }
+
+    private Integer calcularPorcentajePerfilEmpresa(Empresa empresa) {
+        int campos = 0;
+        int camposCompletos = 0;
+
+        // Campos básicos
+        campos += 2; // email, tipoPerfil
+        camposCompletos += 2;
+
+        // Campos de empresa
+        if (empresa.getNombreEmpresa() != null && !empresa.getNombreEmpresa().trim().isEmpty()) {
+            camposCompletos++;
+        }
+        campos++;
+
+        if (empresa.getDescripcion() != null && !empresa.getDescripcion().trim().isEmpty()) {
+            camposCompletos++;
+        }
+        campos++;
+
+        if (empresa.getSitioWeb() != null && !empresa.getSitioWeb().trim().isEmpty()) {
+            camposCompletos++;
+        }
+        campos++;
+
+        // Campos del perfil asociado
+        Perfil perfil = empresa.getPerfil();
+        if (perfil.getUbicacion() != null && !perfil.getUbicacion().trim().isEmpty()) {
+            camposCompletos++;
+        }
+        campos++;
+
+        if (perfil.getTelefono() != null && !perfil.getTelefono().trim().isEmpty()) {
+            camposCompletos++;
+        }
+        campos++;
+
+        return (int) Math.round((double) camposCompletos / campos * 100);
     }
 }

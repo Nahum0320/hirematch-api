@@ -1,5 +1,6 @@
 package com.hirematch.hirematch_api.controllers;
 
+import com.hirematch.hirematch_api.DTO.EstadisticasEmpresaResponse;
 import com.hirematch.hirematch_api.DTO.PerfilPublicoResponse;
 import com.hirematch.hirematch_api.DTO.PerfilUpdateRequest;
 import com.hirematch.hirematch_api.DTO.ProfileRequest;
@@ -16,6 +17,7 @@ import com.hirematch.hirematch_api.repository.PerfilRepository;
 import com.hirematch.hirematch_api.repository.UsuarioRepository;
 import com.hirematch.hirematch_api.repository.SesionRepository;
 import com.hirematch.hirematch_api.security.TokenService;
+import com.hirematch.hirematch_api.service.OfertaService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -48,6 +50,9 @@ public class PerfilController {
 
     @Autowired
     private com.hirematch.hirematch_api.service.PerfilService perfilService;
+
+    @Autowired
+    private OfertaService ofertaService;
 
     private final TokenService tokenService;
     private final SesionRepository sesionRepository;
@@ -346,6 +351,17 @@ public ResponseEntity<ProfileResponse> getMyProfile(@AuthenticationPrincipal Usu
                 .stream().findFirst()
                 .orElseThrow(() -> new ValidacionException("No existe empresa asociada a este usuario"));
         return ResponseEntity.ok(empresa.getEmpresaId());
+    }
+
+    @GetMapping("/empresa/estadisticas")
+    public ResponseEntity<EstadisticasEmpresaResponse> obtenerEstadisticasEmpresa(
+            @RequestHeader("Authorization") String authHeader) {
+        
+        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+        verificarTipoPerfil(usuario, "EMPRESA");
+        
+        EstadisticasEmpresaResponse response = ofertaService.obtenerEstadisticasEmpresa(usuario);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/publico")
