@@ -18,9 +18,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
 
 @RestController
 @RequestMapping("/ofertas")
@@ -47,11 +44,8 @@ public class OfertaController {
     @PostMapping
     public ResponseEntity<OfertaResponse> crearOferta(@Valid @RequestBody CrearOfertaRequest request,
                                                       @RequestHeader("Authorization") String authHeader) {
-
-        // Obtener usuario autenticado y verificar que sea empresa
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
         verificarTipoPerfil(usuario, "EMPRESA");
-
         OfertaResponse response = ofertaService.crearOferta(request, usuario);
         return ResponseEntity.ok(response);
     }
@@ -60,11 +54,8 @@ public class OfertaController {
     public ResponseEntity<OfertaResponse> updateOferta(@PathVariable Long id,
                                                        @Valid @RequestBody CrearOfertaRequest request,
                                                        @RequestHeader("Authorization") String authHeader) {
-
-        // Obtener usuario autenticado y verificar que sea empresa
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
         verificarTipoPerfil(usuario, "EMPRESA");
-
         OfertaResponse response = ofertaService.updateOferta(id, request, usuario);
         return ResponseEntity.ok(response);
     }
@@ -72,11 +63,8 @@ public class OfertaController {
     @GetMapping("/feed")
     public ResponseEntity<Page<OfertaFeedResponse>> obtenerFeed(Pageable pageable,
                                                                 @RequestHeader("Authorization") String authHeader) {
-
-        // Obtener usuario autenticado y verificar que sea postulante
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
         verificarTipoPerfil(usuario, "POSTULANTE");
-
         Page<OfertaFeedResponse> response = ofertaService.obtenerFeedParaUsuario(pageable, usuario);
         return ResponseEntity.ok(response);
     }
@@ -84,100 +72,28 @@ public class OfertaController {
     @GetMapping("/{id}")
     public ResponseEntity<OfertaResponse> obtenerOferta(@PathVariable Long id,
                                                         @RequestHeader("Authorization") String authHeader) {
-
-        // Obtener usuario autenticado (puede ser cualquier tipo)
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
-
         OfertaResponse response = ofertaService.obtenerOfertaPorId(id);
         return ResponseEntity.ok(response);
     }
 
-
-        @GetMapping("/empresa/{id}")
+    @GetMapping("/empresa/{id}")
     public ResponseEntity<Page<OfertaResponse>> obtenerOfertasEmpresa(@PathVariable Long id,
                                                                       @RequestHeader("Authorization") String authHeader,
                                                                       Pageable pageable) {
-        Page<OfertaResponse> response = ofertaService.obtenerOfertasEmpresa(id,pageable);
+        Page<OfertaResponse> response = ofertaService.obtenerOfertasEmpresa(id, pageable);
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Endpoint público para obtener ofertas sin autenticación (para SEO, etc.)
-     */
     @GetMapping("/publico")
     public ResponseEntity<Page<OfertaFeedResponse>> obtenerFeedPublico(Pageable pageable) {
         Page<OfertaFeedResponse> response = ofertaService.obtenerFeed(pageable);
         return ResponseEntity.ok(response);
     }
 
-
-
-    /**
-     * Extrae el usuario autenticado desde el JWT
-     */
-    private Usuario obtenerUsuarioAutenticado(String authHeader) {
-        // Validar formato del header
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new ValidacionException("Token de autorización requerido");
-        }
-
-        // Extraer token
-        String token = authHeader.substring(7);
-
-        if (token.trim().isEmpty()) {
-            throw new ValidacionException("Token vacío");
-        }
-
-        try {
-            // Obtener subject del token (número de sesión)
-            String subject = tokenService.getSubject(token);
-
-            if (subject == null || subject.trim().isEmpty()) {
-                throw new ValidacionException("Token inválido");
-            }
-
-            // Convertir a Long y obtener sesión
-            Long numeroSesion = Long.parseLong(subject);
-
-            Sesion sesion = sesionRepository.findById(numeroSesion)
-                    .orElseThrow(() -> new ValidacionException("Sesión no encontrada"));
-
-            // Verificar que la sesión esté activa
-            if (!sesion.isActiva()) {
-                throw new ValidacionException("Sesión inactiva o expirada");
-            }
-
-            // Verificar que la sesión no haya expirado por tiempo
-            if (sesion.hasExpired()) {
-                throw new ValidacionException("Sesión expirada");
-            }
-
-            return sesion.getUsuario();
-
-        } catch (NumberFormatException e) {
-            throw new ValidacionException("Token de sesión inválido");
-        } catch (Exception e) {
-            throw new ValidacionException("Error al procesar el token: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Verifica que el usuario tenga el tipo de perfil requerido
-     */
-    private void verificarTipoPerfil(Usuario usuario, String tipoRequerido) {
-        Perfil perfil = perfilRepository.findByUsuario(usuario)
-                .orElseThrow(() -> new ValidacionException("El usuario no tiene un perfil configurado"));
-
-        if (!tipoRequerido.equalsIgnoreCase(perfil.getTipoPerfil())) {
-            throw new ValidacionException("Acceso denegado. Se requiere perfil de tipo " + tipoRequerido);
-        }
-    }
-    
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarOferta(@PathVariable Long id,
-                                                @RequestHeader("Authorization") String authHeader) {
-        //TODO: Hacer borrado logico en un futuro?
-        // Obtener usuario autenticado y verificar que sea empresa
+                                               @RequestHeader("Authorization") String authHeader) {
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
         verificarTipoPerfil(usuario, "EMPRESA");
         ofertaService.eliminarOferta(id, usuario);
@@ -186,18 +102,65 @@ public class OfertaController {
 
     @GetMapping("/{id}/estadisticas")
     public ResponseEntity<EstadisticasOfertaResponse> getEstadisticas(@PathVariable Long id,
-                                   @RequestHeader("Authorization") String authHeader) {
-    //verificar que sea empresa
+                                                                      @RequestHeader("Authorization") String authHeader) {
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
         verificarTipoPerfil(usuario, "EMPRESA");
-
-    //verificar que la oferta pertenezca a la empresa
-    if (!ofertaService.perteneceAUsuario(id, usuario)) {
-        throw new ValidacionException("La oferta no pertenece a la empresa");
+        if (!ofertaService.perteneceAUsuario(id, usuario)) {
+            throw new ValidacionException("La oferta no pertenece a la empresa");
+        }
+        return ResponseEntity.ok(ofertaService.obtenerEstadisticasOferta(id, usuario));
     }
 
-    // Lógica para obtener estadísticas de la oferta
-    return ResponseEntity.ok(ofertaService.obtenerEstadisticasOferta(id, usuario));
-}
+    @PostMapping("/{id}/guardar")
+    public ResponseEntity<OfertaResponse> guardarOferta(@PathVariable Long id,
+                                                        @RequestHeader("Authorization") String authHeader) {
+        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+        verificarTipoPerfil(usuario, "POSTULANTE");
+        OfertaResponse response = ofertaService.guardarOferta(id, usuario);
+        return ResponseEntity.ok(response);
+    }
 
+    @GetMapping("/guardadas")
+    public ResponseEntity<Page<OfertaResponse>> obtenerOfertasGuardadas(@RequestHeader("Authorization") String authHeader,
+                                                                        Pageable pageable) {
+        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+        verificarTipoPerfil(usuario, "POSTULANTE");
+        Page<OfertaResponse> response = ofertaService.obtenerOfertasGuardadas(usuario, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    private Usuario obtenerUsuarioAutenticado(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new ValidacionException("Token de autorización requerido");
+        }
+        String token = authHeader.substring(7);
+        if (token.trim().isEmpty()) {
+            throw new ValidacionException("Token vacío");
+        }
+        try {
+            String subject = tokenService.getSubject(token);
+            if (subject == null || subject.trim().isEmpty()) {
+                throw new ValidacionException("Token inválido");
+            }
+            Long numeroSesion = Long.parseLong(subject);
+            Sesion sesion = sesionRepository.findById(numeroSesion)
+                    .orElseThrow(() -> new ValidacionException("Sesión no encontrada"));
+            if (!sesion.isActiva() || sesion.hasExpired()) {
+                throw new ValidacionException("Sesión inactiva o expirada");
+            }
+            return sesion.getUsuario();
+        } catch (NumberFormatException e) {
+            throw new ValidacionException("Token de sesión inválido");
+        } catch (Exception e) {
+            throw new ValidacionException("Error al procesar el token: " + e.getMessage());
+        }
+    }
+
+    private void verificarTipoPerfil(Usuario usuario, String tipoRequerido) {
+        Perfil perfil = perfilRepository.findByUsuario(usuario)
+                .orElseThrow(() -> new ValidacionException("El usuario no tiene un perfil configurado"));
+        if (!tipoRequerido.equalsIgnoreCase(perfil.getTipoPerfil())) {
+            throw new ValidacionException("Acceso denegado. Se requiere perfil de tipo " + tipoRequerido);
+        }
+    }
 }
