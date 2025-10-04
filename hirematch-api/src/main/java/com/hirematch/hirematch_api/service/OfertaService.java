@@ -6,13 +6,8 @@ import com.hirematch.hirematch_api.DTO.EstadisticasOfertaResponse;
 import com.hirematch.hirematch_api.DTO.EstadisticasEmpresaResponse;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.entity.*;
-import com.hirematch.hirematch_api.repository.EmpresaRepository;
-import com.hirematch.hirematch_api.repository.OfertaLaboralRepository;
-import com.hirematch.hirematch_api.repository.PerfilRepository;
-import com.hirematch.hirematch_api.repository.PostulantePorOfertaRepository;
-import com.hirematch.hirematch_api.repository.PassRepository;
-import com.hirematch.hirematch_api.repository.ChatRepository;
-import com.hirematch.hirematch_api.repository.UsuarioBadgeRepository;
+import com.hirematch.hirematch_api.repository.*;
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,8 +25,9 @@ public class OfertaService {
     private final PassRepository passRepository;
     private final ChatRepository chatRepository;
     private final UsuarioBadgeRepository usuarioBadgeRepository;
+    private final OfertaGuardadaRepository ofertaGuardadaRepository;
 
-    public OfertaService(OfertaLaboralRepository ofertaRepository, EmpresaRepository empresaRepository, PerfilRepository perfilRepository, PostulantePorOfertaRepository postulantePorOfertaRepository, PassRepository passRepository, ChatRepository chatRepository, UsuarioBadgeRepository usuarioBadgeRepository) {
+    public OfertaService(OfertaLaboralRepository ofertaRepository, EmpresaRepository empresaRepository, PerfilRepository perfilRepository, PostulantePorOfertaRepository postulantePorOfertaRepository, PassRepository passRepository, ChatRepository chatRepository, UsuarioBadgeRepository usuarioBadgeRepository, OfertaGuardadaRepository ofertaGuardadaRepository) {
         this.ofertaRepository = ofertaRepository;
         this.empresaRepository = empresaRepository;
         this.perfilRepository = perfilRepository;
@@ -39,7 +35,49 @@ public class OfertaService {
         this.passRepository = passRepository;
         this.chatRepository = chatRepository;
         this.usuarioBadgeRepository = usuarioBadgeRepository;
+        this.ofertaGuardadaRepository = ofertaGuardadaRepository;
     }
+
+    //@Transactional
+    public OfertaResponse guardarOferta(Long ofertaId, Usuario usuario) {
+        Perfil perfil = perfilRepository.findByUsuario(usuario)
+                .orElseThrow(() -> new ValidacionException("Perfil no encontrado"));
+        if (!"POSTULANTE".equalsIgnoreCase(perfil.getTipoPerfil())) {
+            throw new ValidacionException("Solo postulantes pueden guardar ofertas");
+        }
+        OfertaLaboral oferta = ofertaRepository.findById(ofertaId)
+                .orElseThrow(() -> new ValidacionException("Oferta no encontrada"));
+        if (!oferta.isActiva()) {
+            throw new ValidacionException("No se puede guardar una oferta inactiva");
+        }
+
+        Optional<OfertaGuardada> existing = ofertaGuardadaRepository.findByPerfilAndOferta(perfil, oferta);
+        if (existing.isPresent()) {
+            // Unsave the offer
+            ofertaGuardadaRepository.delete(existing.get());
+            return mapearAOfertaResponse(oferta);
+        }
+
+        OfertaGuardada ofertaGuardada = new OfertaGuardada();
+        ofertaGuardada.setPerfil(perfil);
+        ofertaGuardada.setOferta(oferta);
+        ofertaGuardada.setFechaGuardado(LocalDateTime.now());
+        ofertaGuardadaRepository.save(ofertaGuardada);
+
+        return mapearAOfertaResponse(oferta);
+    }
+
+    //@Transactional(readOnly = true)
+    public Page<OfertaResponse> obtenerOfertasGuardadas(Usuario usuario, Pageable pageable) {
+        Perfil perfil = perfilRepository.findByUsuario(usuario)
+                .orElseThrow(() -> new ValidacionException("Perfil no encontrado"));
+        if (!"POSTULANTE".equalsIgnoreCase(perfil.getTipoPerfil())) {
+            throw new ValidacionException("Solo postulantes pueden ver ofertas guardadas");
+        }
+        return ofertaGuardadaRepository.findByPerfilOrderByFechaGuardadoDesc(perfil, pageable)
+                .map(ofertaGuardada -> mapearAOfertaResponse(ofertaGuardada.getOferta()));
+    }
+
     public OfertaResponse crearOferta(CrearOfertaRequest request) {
         return crearOferta(request, null);
     }
