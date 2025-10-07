@@ -30,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Base64;
+import java.util.List;
 
 
 @RestController
@@ -424,6 +425,26 @@ public ResponseEntity<PerfilPublicoResponse> getPerfilPublicoPorEmail(
         } catch (Exception e) {
             throw new ValidacionException("Error al procesar el token: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/empresas")
+    public ResponseEntity<List<com.hirematch.hirematch_api.DTO.EmpresaResponse>> obtenerTodasLasEmpresas() {
+        List<Empresa> empresas = empresaRepository.findAll();
+        
+        List<com.hirematch.hirematch_api.DTO.EmpresaResponse> empresasResponse = empresas.stream()
+                .map(this::mapearAEmpresaResponse)
+                .collect(java.util.stream.Collectors.toList());
+        
+        return ResponseEntity.ok(empresasResponse);
+    }
+
+    private com.hirematch.hirematch_api.DTO.EmpresaResponse mapearAEmpresaResponse(Empresa empresa) {
+        return new com.hirematch.hirematch_api.DTO.EmpresaResponse(
+                empresa.getEmpresaId(),
+                empresa.getNombreEmpresa(),
+                empresa.getDescripcion(),
+                empresa.getSitioWeb()
+        );
     }
 
     /**

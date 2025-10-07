@@ -4,10 +4,11 @@ import com.hirematch.hirematch_api.DTO.OfertaResponse;
 import com.hirematch.hirematch_api.DTO.OfertaFeedResponse;
 import com.hirematch.hirematch_api.DTO.EstadisticasOfertaResponse;
 import com.hirematch.hirematch_api.DTO.EstadisticasEmpresaResponse;
+import com.hirematch.hirematch_api.DTO.FeedRequest;
+import com.hirematch.hirematch_api.DTO.BuscarOfertaRequest;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.entity.*;
 import com.hirematch.hirematch_api.repository.*;
-import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -110,16 +111,28 @@ public class OfertaService {
                 .map(this::mapearAFeedResponse);
     }
 
-    public Page<OfertaFeedResponse> obtenerFeedParaUsuario(Pageable pageable, Usuario usuario) {
-        Perfil perfil = this.perfilRepository.findByUsuario(usuario)
-                .orElseThrow(() -> new ValidacionException("Perfil no encontrado"));
-                String ubicacion = perfil.getUbicacion();
-        String intereses = perfil.getIntereses(); // Usamos intereses para matching como se especificó
-// Usamos la consulta nativa para matching automático basado en ubicación e intereses
+    public Page<OfertaFeedResponse> obtenerFeedParaUsuario(FeedRequest feedRequest, Usuario usuario) {
+        // Crear Pageable desde el request
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                feedRequest.getPage(), 
+                feedRequest.getSize()
+        );
+        
+        // Por defecto solo aplicar filtro de interacciones
+        // Los filtros adicionales son opcionales y vienen del request
+        
         Page<OfertaLaboral> page = ofertaRepository.findMatchingOffers(
                 EstadoOferta.ACTIVA.name(),
-                ubicacion,
-                intereses,
+                feedRequest.getUbicacion(), // filtro opcional por ubicación
+                feedRequest.getTipoTrabajo(), // filtro opcional por tipo de trabajo
+                feedRequest.getNivelExperiencia(), // filtro opcional por nivel de experiencia
+                feedRequest.getAreaTrabajo(), // filtro opcional por área de trabajo
+                feedRequest.getEmpresaId(), // filtro opcional por ID de empresa
+                feedRequest.getUrgente(), // filtro opcional por urgente
+                feedRequest.getDestacada(), // filtro opcional por destacada
+                feedRequest.getSalarioMinimo(), // filtro opcional por salario mínimo
+                feedRequest.getSalarioMaximo(), // filtro opcional por salario máximo
+                usuario.getUsuarioId(),
                 pageable
         );
         return page.map(this::mapearAFeedResponse);
@@ -592,4 +605,34 @@ public class OfertaService {
 
         return (int) Math.round((double) camposCompletos / campos * 100);
     }
+
+    // === BÚSQUEDA AVANZADA ===
+
+    public Page<OfertaFeedResponse> buscarOfertas(BuscarOfertaRequest request) {
+        // Crear Pageable desde el request
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                request.getPage(), 
+                request.getSize()
+        );
+        
+        // Ejecutar búsqueda
+        Page<OfertaLaboral> page = ofertaRepository.buscarOfertasConRelevancia(
+                EstadoOferta.ACTIVA.name(),
+                request.getTextoBusqueda(),
+                request.getUbicacion(),
+                request.getTipoTrabajo(),
+                request.getNivelExperiencia(),
+                request.getAreaTrabajo(),
+                request.getEmpresaId(),
+                request.getUrgente(),
+                request.getDestacada(),
+                request.getSalarioMinimo(),
+                request.getSalarioMaximo(),
+                request.getDiasRecientes(),
+                pageable
+        );
+        
+        return page.map(this::mapearAFeedResponse);
+    }
+
 }

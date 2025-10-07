@@ -4,6 +4,8 @@ import com.hirematch.hirematch_api.DTO.CrearOfertaRequest;
 import com.hirematch.hirematch_api.DTO.EstadisticasOfertaResponse;
 import com.hirematch.hirematch_api.DTO.OfertaResponse;
 import com.hirematch.hirematch_api.DTO.OfertaFeedResponse;
+import com.hirematch.hirematch_api.DTO.FeedRequest;
+import com.hirematch.hirematch_api.DTO.BuscarOfertaRequest;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.entity.Perfil;
 import com.hirematch.hirematch_api.entity.Sesion;
@@ -60,12 +62,24 @@ public class OfertaController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/feed")
-    public ResponseEntity<Page<OfertaFeedResponse>> obtenerFeed(Pageable pageable,
-                                                                @RequestHeader("Authorization") String authHeader) {
+    @PostMapping("/feed")
+    public ResponseEntity<Page<OfertaFeedResponse>> obtenerFeed(@RequestBody(required = false) FeedRequest feedRequest,
+                                                                @RequestHeader("Authorization") String authHeader,
+                                                                @RequestParam(defaultValue = "0") Integer page,
+                                                                @RequestParam(defaultValue = "20") Integer size) {
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
         verificarTipoPerfil(usuario, "POSTULANTE");
-        Page<OfertaFeedResponse> response = ofertaService.obtenerFeedParaUsuario(pageable, usuario);
+        
+        // Si no se envía request, usar valores por defecto
+        if (feedRequest == null) {
+            feedRequest = new FeedRequest();
+        }
+        
+        // Usar los parámetros de query para paginación
+        feedRequest.setPage(page);
+        feedRequest.setSize(size);
+        
+        Page<OfertaFeedResponse> response = ofertaService.obtenerFeedParaUsuario(feedRequest, usuario);
         return ResponseEntity.ok(response);
     }
 
@@ -90,6 +104,26 @@ public class OfertaController {
         Page<OfertaFeedResponse> response = ofertaService.obtenerFeed(pageable);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/buscar")
+    public ResponseEntity<Page<OfertaFeedResponse>> buscarOfertas(
+            @RequestBody(required = false) BuscarOfertaRequest request,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) {
+        
+        // Si no se envía request, usar valores por defecto
+        if (request == null) {
+            request = new BuscarOfertaRequest();
+        }
+        
+        // Usar los parámetros de query para paginación
+        request.setPage(page);
+        request.setSize(size);
+        
+        Page<OfertaFeedResponse> response = ofertaService.buscarOfertas(request);
+        return ResponseEntity.ok(response);
+    }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarOferta(@PathVariable Long id,

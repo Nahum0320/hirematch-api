@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -198,6 +199,51 @@ public interface OfertaLaboralRepository extends JpaRepository<OfertaLaboral, Lo
             value = "SELECT * FROM ofertas_laborales o " +
                     "WHERE o.estado = :estado " +
                     "AND (:ubicacionUsuario IS NULL OR LOWER(o.ubicacion) LIKE LOWER(CONCAT('%', :ubicacionUsuario, '%'))) " +
+                    "AND (:tipoTrabajo IS NULL OR o.tipo_trabajo = :tipoTrabajo) " +
+                    "AND (:nivelExperiencia IS NULL OR o.nivel_experiencia = :nivelExperiencia) " +
+                    "AND (:areaTrabajo IS NULL OR LOWER(o.area_trabajo) LIKE LOWER(CONCAT('%', :areaTrabajo, '%'))) " +
+                    "AND (:empresaId IS NULL OR o.empresa_id = :empresaId) " +
+                    "AND (:urgente IS NULL OR o.urgente = :urgente) " +
+                    "AND (:destacada IS NULL OR o.destacada = :destacada) " +
+                    "AND (:salarioMinimo IS NULL OR o.salario_minimo >= :salarioMinimo) " +
+                    "AND (:salarioMaximo IS NULL OR o.salario_maximo <= :salarioMaximo) " +
+                    "AND o.oferta_id NOT IN ( " +
+                    "   SELECT DISTINCT l.oferta_id FROM likes l " +
+                    "   INNER JOIN perfiles p ON l.perfil_id = p.perfil_id " +
+                    "   WHERE p.usuario_id = :usuarioId " +
+                    "   UNION " +
+                    "   SELECT DISTINCT pass.oferta_id FROM passes pass " +
+                    "   INNER JOIN perfiles p ON pass.perfil_id = p.perfil_id " +
+                    "   WHERE p.usuario_id = :usuarioId " +
+                    "   UNION " +
+                    "   SELECT DISTINCT po.oferta_id FROM postulantes_por_oferta po " +
+                    "   INNER JOIN perfiles p ON po.postulante_id = p.perfil_id " +
+                    "   WHERE p.usuario_id = :usuarioId " +
+                    ") " +
+                    "ORDER BY CASE WHEN o.destacada = true THEN 0 ELSE 1 END, " +
+                    "CASE WHEN o.urgente = true THEN 0 ELSE 1 END, " +
+                    "o.fecha_publicacion DESC",
+            nativeQuery = true
+    )
+    Page<OfertaLaboral> findMatchingOffers(
+            @Param("estado") String estado,
+            @Param("ubicacionUsuario") String ubicacionUsuario,
+            @Param("tipoTrabajo") String tipoTrabajo,
+            @Param("nivelExperiencia") String nivelExperiencia,
+            @Param("areaTrabajo") String areaTrabajo,
+            @Param("empresaId") Long empresaId,
+            @Param("urgente") Boolean urgente,
+            @Param("destacada") Boolean destacada,
+            @Param("salarioMinimo") BigDecimal salarioMinimo,
+            @Param("salarioMaximo") BigDecimal salarioMaximo,
+            @Param("usuarioId") Long usuarioId,
+            Pageable pageable
+    );
+
+    @Query(
+            value = "SELECT * FROM ofertas_laborales o " +
+                    "WHERE o.estado = :estado " +
+                    "AND (:ubicacionUsuario IS NULL OR LOWER(o.ubicacion) LIKE LOWER(CONCAT('%', :ubicacionUsuario, '%'))) " +
                     "AND (:habilidadesUsuario IS NULL OR EXISTS ( " +
                     "   SELECT 1 FROM UNNEST(string_to_array(:habilidadesUsuario, ',')) AS skill " +
                     "   WHERE LOWER(o.habilidades_requeridas) LIKE CONCAT('%', LOWER(skill), '%')" +
@@ -207,13 +253,55 @@ public interface OfertaLaboralRepository extends JpaRepository<OfertaLaboral, Lo
                     "o.fecha_publicacion DESC",
             nativeQuery = true
     )
-    Page<OfertaLaboral> findMatchingOffers(
+    Page<OfertaLaboral> findMatchingOffersWithoutUser(
             @Param("estado") String estado,
             @Param("ubicacionUsuario") String ubicacionUsuario,
             @Param("habilidadesUsuario") String habilidadesUsuario,
             Pageable pageable
     );
 
+
+    // === BÚSQUEDA AVANZADA CON RELEVANCIA ===
+
+    @Query(
+            value = "SELECT * FROM ofertas_laborales o " +
+                    "WHERE o.estado = :estado " +
+                    "AND (:textoBusqueda IS NULL OR " +
+                    "     LOWER(o.titulo) LIKE LOWER(CONCAT('%', :textoBusqueda, '%')) OR " +
+                    "     LOWER(o.descripcion) LIKE LOWER(CONCAT('%', :textoBusqueda, '%')) OR " +
+                    "     LOWER(o.habilidades_requeridas) LIKE LOWER(CONCAT('%', :textoBusqueda, '%')) OR " +
+                    "     LOWER(o.area_trabajo) LIKE LOWER(CONCAT('%', :textoBusqueda, '%'))) " +
+                    "AND (:ubicacion IS NULL OR LOWER(o.ubicacion) LIKE LOWER(CONCAT('%', :ubicacion, '%'))) " +
+                    "AND (:tipoTrabajo IS NULL OR o.tipo_trabajo = :tipoTrabajo) " +
+                    "AND (:nivelExperiencia IS NULL OR o.nivel_experiencia = :nivelExperiencia) " +
+                    "AND (:areaTrabajo IS NULL OR LOWER(o.area_trabajo) LIKE LOWER(CONCAT('%', :areaTrabajo, '%'))) " +
+                    "AND (:empresaId IS NULL OR o.empresa_id = :empresaId) " +
+                    "AND (:urgente IS NULL OR o.urgente = :urgente) " +
+                    "AND (:destacada IS NULL OR o.destacada = :destacada) " +
+                    "AND (:salarioMinimo IS NULL OR o.salario_minimo >= :salarioMinimo) " +
+                    "AND (:salarioMaximo IS NULL OR o.salario_maximo <= :salarioMaximo) " +
+                    "AND (:diasRecientes IS NULL OR o.fecha_publicacion >= (CURRENT_TIMESTAMP - INTERVAL '1 day' * :diasRecientes)) " +
+                    "ORDER BY " +
+                    "CASE WHEN o.destacada = true THEN 0 ELSE 1 END, " +
+                    "CASE WHEN o.urgente = true THEN 0 ELSE 1 END, " +
+                    "o.fecha_publicacion DESC",
+            nativeQuery = true
+    )
+    Page<OfertaLaboral> buscarOfertasConRelevancia(
+            @Param("estado") String estado,
+            @Param("textoBusqueda") String textoBusqueda,
+            @Param("ubicacion") String ubicacion,
+            @Param("tipoTrabajo") String tipoTrabajo,
+            @Param("nivelExperiencia") String nivelExperiencia,
+            @Param("areaTrabajo") String areaTrabajo,
+            @Param("empresaId") Long empresaId,
+            @Param("urgente") Boolean urgente,
+            @Param("destacada") Boolean destacada,
+            @Param("salarioMinimo") BigDecimal salarioMinimo,
+            @Param("salarioMaximo") BigDecimal salarioMaximo,
+            @Param("diasRecientes") Integer diasRecientes,
+            Pageable pageable
+    );
 
     // === CONSULTAS DE AGREGACIÓN ===
 
