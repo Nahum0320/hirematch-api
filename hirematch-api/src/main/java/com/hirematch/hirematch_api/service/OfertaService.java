@@ -4,6 +4,7 @@ import com.hirematch.hirematch_api.DTO.OfertaResponse;
 import com.hirematch.hirematch_api.DTO.OfertaFeedResponse;
 import com.hirematch.hirematch_api.DTO.EstadisticasOfertaResponse;
 import com.hirematch.hirematch_api.DTO.EstadisticasEmpresaResponse;
+import com.hirematch.hirematch_api.DTO.FeedRequest;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.entity.*;
 import com.hirematch.hirematch_api.repository.*;
@@ -109,13 +110,27 @@ public class OfertaService {
                 .map(this::mapearAFeedResponse);
     }
 
-    public Page<OfertaFeedResponse> obtenerFeedParaUsuario(Pageable pageable, Usuario usuario) {
-        Perfil perfil = this.perfilRepository.findByUsuario(usuario)
-                .orElseThrow(() -> new ValidacionException("Perfil no encontrado"));
+    public Page<OfertaFeedResponse> obtenerFeedParaUsuario(FeedRequest feedRequest, Usuario usuario) {
+        // Crear Pageable desde el request
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                feedRequest.getPage(), 
+                feedRequest.getSize()
+        );
+        
+        // Por defecto solo aplicar filtro de interacciones
+        // Los filtros adicionales son opcionales y vienen del request
+        
         Page<OfertaLaboral> page = ofertaRepository.findMatchingOffers(
                 EstadoOferta.ACTIVA.name(),
-                null,
-                null, 
+                feedRequest.getUbicacion(), // filtro opcional por ubicación
+                feedRequest.getTipoTrabajo(), // filtro opcional por tipo de trabajo
+                feedRequest.getNivelExperiencia(), // filtro opcional por nivel de experiencia
+                feedRequest.getAreaTrabajo(), // filtro opcional por área de trabajo
+                feedRequest.getEmpresaId(), // filtro opcional por ID de empresa
+                feedRequest.getUrgente(), // filtro opcional por urgente
+                feedRequest.getDestacada(), // filtro opcional por destacada
+                feedRequest.getSalarioMinimo(), // filtro opcional por salario mínimo
+                feedRequest.getSalarioMaximo(), // filtro opcional por salario máximo
                 usuario.getUsuarioId(),
                 pageable
         );

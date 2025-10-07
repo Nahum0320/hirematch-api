@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -197,6 +198,15 @@ public interface OfertaLaboralRepository extends JpaRepository<OfertaLaboral, Lo
     @Query(
             value = "SELECT * FROM ofertas_laborales o " +
                     "WHERE o.estado = :estado " +
+                    "AND (:ubicacionUsuario IS NULL OR LOWER(o.ubicacion) LIKE LOWER(CONCAT('%', :ubicacionUsuario, '%'))) " +
+                    "AND (:tipoTrabajo IS NULL OR o.tipo_trabajo = :tipoTrabajo) " +
+                    "AND (:nivelExperiencia IS NULL OR o.nivel_experiencia = :nivelExperiencia) " +
+                    "AND (:areaTrabajo IS NULL OR LOWER(o.area_trabajo) LIKE LOWER(CONCAT('%', :areaTrabajo, '%'))) " +
+                    "AND (:empresaId IS NULL OR o.empresa_id = :empresaId) " +
+                    "AND (:urgente IS NULL OR o.urgente = :urgente) " +
+                    "AND (:destacada IS NULL OR o.destacada = :destacada) " +
+                    "AND (:salarioMinimo IS NULL OR o.salario_minimo >= :salarioMinimo) " +
+                    "AND (:salarioMaximo IS NULL OR o.salario_maximo <= :salarioMaximo) " +
                     "AND o.oferta_id NOT IN ( " +
                     "   SELECT DISTINCT l.oferta_id FROM likes l " +
                     "   INNER JOIN perfiles p ON l.perfil_id = p.perfil_id " +
@@ -210,13 +220,22 @@ public interface OfertaLaboralRepository extends JpaRepository<OfertaLaboral, Lo
                     "   INNER JOIN perfiles p ON po.postulante_id = p.perfil_id " +
                     "   WHERE p.usuario_id = :usuarioId " +
                     ") " +
-                    "ORDER BY o.fecha_publicacion DESC",
+                    "ORDER BY CASE WHEN o.destacada = true THEN 0 ELSE 1 END, " +
+                    "CASE WHEN o.urgente = true THEN 0 ELSE 1 END, " +
+                    "o.fecha_publicacion DESC",
             nativeQuery = true
     )
     Page<OfertaLaboral> findMatchingOffers(
             @Param("estado") String estado,
             @Param("ubicacionUsuario") String ubicacionUsuario,
-            @Param("habilidadesUsuario") String habilidadesUsuario,
+            @Param("tipoTrabajo") String tipoTrabajo,
+            @Param("nivelExperiencia") String nivelExperiencia,
+            @Param("areaTrabajo") String areaTrabajo,
+            @Param("empresaId") Long empresaId,
+            @Param("urgente") Boolean urgente,
+            @Param("destacada") Boolean destacada,
+            @Param("salarioMinimo") BigDecimal salarioMinimo,
+            @Param("salarioMaximo") BigDecimal salarioMaximo,
             @Param("usuarioId") Long usuarioId,
             Pageable pageable
     );
