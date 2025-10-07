@@ -197,6 +197,33 @@ public interface OfertaLaboralRepository extends JpaRepository<OfertaLaboral, Lo
     @Query(
             value = "SELECT * FROM ofertas_laborales o " +
                     "WHERE o.estado = :estado " +
+                    "AND o.oferta_id NOT IN ( " +
+                    "   SELECT DISTINCT l.oferta_id FROM likes l " +
+                    "   INNER JOIN perfiles p ON l.perfil_id = p.perfil_id " +
+                    "   WHERE p.usuario_id = :usuarioId " +
+                    "   UNION " +
+                    "   SELECT DISTINCT pass.oferta_id FROM passes pass " +
+                    "   INNER JOIN perfiles p ON pass.perfil_id = p.perfil_id " +
+                    "   WHERE p.usuario_id = :usuarioId " +
+                    "   UNION " +
+                    "   SELECT DISTINCT po.oferta_id FROM postulantes_por_oferta po " +
+                    "   INNER JOIN perfiles p ON po.postulante_id = p.perfil_id " +
+                    "   WHERE p.usuario_id = :usuarioId " +
+                    ") " +
+                    "ORDER BY o.fecha_publicacion DESC",
+            nativeQuery = true
+    )
+    Page<OfertaLaboral> findMatchingOffers(
+            @Param("estado") String estado,
+            @Param("ubicacionUsuario") String ubicacionUsuario,
+            @Param("habilidadesUsuario") String habilidadesUsuario,
+            @Param("usuarioId") Long usuarioId,
+            Pageable pageable
+    );
+
+    @Query(
+            value = "SELECT * FROM ofertas_laborales o " +
+                    "WHERE o.estado = :estado " +
                     "AND (:ubicacionUsuario IS NULL OR LOWER(o.ubicacion) LIKE LOWER(CONCAT('%', :ubicacionUsuario, '%'))) " +
                     "AND (:habilidadesUsuario IS NULL OR EXISTS ( " +
                     "   SELECT 1 FROM UNNEST(string_to_array(:habilidadesUsuario, ',')) AS skill " +
@@ -207,7 +234,7 @@ public interface OfertaLaboralRepository extends JpaRepository<OfertaLaboral, Lo
                     "o.fecha_publicacion DESC",
             nativeQuery = true
     )
-    Page<OfertaLaboral> findMatchingOffers(
+    Page<OfertaLaboral> findMatchingOffersWithoutUser(
             @Param("estado") String estado,
             @Param("ubicacionUsuario") String ubicacionUsuario,
             @Param("habilidadesUsuario") String habilidadesUsuario,

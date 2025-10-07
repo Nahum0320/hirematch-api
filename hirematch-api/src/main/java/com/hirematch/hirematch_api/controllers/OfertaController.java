@@ -91,6 +91,7 @@ public class OfertaController {
         return ResponseEntity.ok(response);
     }
 
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarOferta(@PathVariable Long id,
                                                @RequestHeader("Authorization") String authHeader) {

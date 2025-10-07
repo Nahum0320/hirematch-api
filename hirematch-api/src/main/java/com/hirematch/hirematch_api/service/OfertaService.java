@@ -7,7 +7,6 @@ import com.hirematch.hirematch_api.DTO.EstadisticasEmpresaResponse;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.entity.*;
 import com.hirematch.hirematch_api.repository.*;
-import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -113,13 +112,11 @@ public class OfertaService {
     public Page<OfertaFeedResponse> obtenerFeedParaUsuario(Pageable pageable, Usuario usuario) {
         Perfil perfil = this.perfilRepository.findByUsuario(usuario)
                 .orElseThrow(() -> new ValidacionException("Perfil no encontrado"));
-                String ubicacion = perfil.getUbicacion();
-        String intereses = perfil.getIntereses(); // Usamos intereses para matching como se especificó
-// Usamos la consulta nativa para matching automático basado en ubicación e intereses
         Page<OfertaLaboral> page = ofertaRepository.findMatchingOffers(
                 EstadoOferta.ACTIVA.name(),
-                ubicacion,
-                intereses,
+                null,
+                null, 
+                usuario.getUsuarioId(),
                 pageable
         );
         return page.map(this::mapearAFeedResponse);
