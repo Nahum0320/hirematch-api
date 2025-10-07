@@ -5,6 +5,7 @@ import com.hirematch.hirematch_api.DTO.OfertaFeedResponse;
 import com.hirematch.hirematch_api.DTO.EstadisticasOfertaResponse;
 import com.hirematch.hirematch_api.DTO.EstadisticasEmpresaResponse;
 import com.hirematch.hirematch_api.DTO.FeedRequest;
+import com.hirematch.hirematch_api.DTO.BuscarOfertaRequest;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.entity.*;
 import com.hirematch.hirematch_api.repository.*;
@@ -604,4 +605,34 @@ public class OfertaService {
 
         return (int) Math.round((double) camposCompletos / campos * 100);
     }
+
+    // === BÚSQUEDA AVANZADA ===
+
+    public Page<OfertaFeedResponse> buscarOfertas(BuscarOfertaRequest request) {
+        // Crear Pageable desde el request
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                request.getPage(), 
+                request.getSize()
+        );
+        
+        // Ejecutar búsqueda
+        Page<OfertaLaboral> page = ofertaRepository.buscarOfertasConRelevancia(
+                EstadoOferta.ACTIVA.name(),
+                request.getTextoBusqueda(),
+                request.getUbicacion(),
+                request.getTipoTrabajo(),
+                request.getNivelExperiencia(),
+                request.getAreaTrabajo(),
+                request.getEmpresaId(),
+                request.getUrgente(),
+                request.getDestacada(),
+                request.getSalarioMinimo(),
+                request.getSalarioMaximo(),
+                request.getDiasRecientes(),
+                pageable
+        );
+        
+        return page.map(this::mapearAFeedResponse);
+    }
+
 }

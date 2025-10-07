@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/resend-code").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hello").permitAll()
                         .requestMatchers(HttpMethod.GET, "/ofertas/publico").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/ofertas/buscar").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hello-protected").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/profile/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/profile/**").authenticated()

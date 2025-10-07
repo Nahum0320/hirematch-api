@@ -5,6 +5,7 @@ import com.hirematch.hirematch_api.DTO.EstadisticasOfertaResponse;
 import com.hirematch.hirematch_api.DTO.OfertaResponse;
 import com.hirematch.hirematch_api.DTO.OfertaFeedResponse;
 import com.hirematch.hirematch_api.DTO.FeedRequest;
+import com.hirematch.hirematch_api.DTO.BuscarOfertaRequest;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.entity.Perfil;
 import com.hirematch.hirematch_api.entity.Sesion;
@@ -101,6 +102,25 @@ public class OfertaController {
     @GetMapping("/publico")
     public ResponseEntity<Page<OfertaFeedResponse>> obtenerFeedPublico(Pageable pageable) {
         Page<OfertaFeedResponse> response = ofertaService.obtenerFeed(pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/buscar")
+    public ResponseEntity<Page<OfertaFeedResponse>> buscarOfertas(
+            @RequestBody(required = false) BuscarOfertaRequest request,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) {
+        
+        // Si no se envía request, usar valores por defecto
+        if (request == null) {
+            request = new BuscarOfertaRequest();
+        }
+        
+        // Usar los parámetros de query para paginación
+        request.setPage(page);
+        request.setSize(size);
+        
+        Page<OfertaFeedResponse> response = ofertaService.buscarOfertas(request);
         return ResponseEntity.ok(response);
     }
 
