@@ -12,16 +12,18 @@ import com.hirematch.hirematch_api.repository.SesionRepository;
 import com.hirematch.hirematch_api.security.TokenService;
 import com.hirematch.hirematch_api.service.LikeService;
 import com.hirematch.hirematch_api.service.OfertaService;
+import com.hirematch.hirematch_api.service.UserStatsService;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+
 import com.hirematch.hirematch_api.entity.EstadoPostulacion;
 
 
@@ -34,6 +36,7 @@ public class LikeController {
     private final SesionRepository sesionRepository;
     private final PerfilRepository perfilRepository;
     private final OfertaService ofertaService;
+    private UserStatsService userStatsService;
 
     public LikeController(LikeService likeService, TokenService tokenService,
                           SesionRepository sesionRepository, PerfilRepository perfilRepository,
@@ -49,6 +52,13 @@ public class LikeController {
     public ResponseEntity<String> darLike(@PathVariable Long ofertaId,
                                           @RequestHeader("Authorization") String authHeader) {
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+        boolean canSendLike = userStatsService.useLike(usuario.getUsuarioId());
+        
+        if (!canSendLike) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("No tienes suficientes likes disponibles. Compra más likes o una suscripción.");
+        }
+
         likeService.darLike(usuario, ofertaId);
         return ResponseEntity.ok("Like registrado correctamente");
     }
@@ -57,6 +67,14 @@ public class LikeController {
     public ResponseEntity<String> darSuperLike(@PathVariable Long ofertaId,
                                                @RequestHeader("Authorization") String authHeader) {
         Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+
+        boolean canSendLike = userStatsService.useSuperlike(usuario.getUsuarioId());
+        
+        if (!canSendLike) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("No tienes suficientes superlikes disponibles. Compra más superlikes o una suscripción.");
+        }
+
         likeService.darSuperLike(usuario, ofertaId);
         return ResponseEntity.ok("Superlike registrado correctamente");
     }
