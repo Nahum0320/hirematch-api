@@ -88,6 +88,7 @@ public class OnvoPayService {
         // Información del cliente
         requestBody.put("customerName", usuario.getNombre() + " " + usuario.getApellido());
         requestBody.put("customerEmail", usuario.getEmail());
+        requestBody.put("customerPhone", "+50688888888");
         
         // URLs de redirección
         requestBody.put("redirectUrl", successUrl);
@@ -99,6 +100,9 @@ public class OnvoPayService {
         // Utilizamos el ID del producto en Onvo Pay en lugar de propiedades directas
         lineItem.put("priceId", product.getOnvoPayProductId());
         lineItem.put("quantity", 1);
+        lineItem.put("unitAmount", product.getPrice());
+        lineItem.put("currency", "USD");
+        lineItem.put("description", product.getDescription());
         
         requestBody.put("lineItems", List.of(lineItem));
         requestBody.put("metadata", metadata);
@@ -107,7 +111,7 @@ public class OnvoPayService {
         
         // El endpoint correcto según la documentación
         ResponseEntity<Map> response = restTemplate.postForEntity(
-            apiUrl + "/v1/checkout/sessions/one-time-link",
+            "https://api.onvopay.com" + "/v1/checkout/sessions/one-time-link",
             request,
             Map.class
         );
