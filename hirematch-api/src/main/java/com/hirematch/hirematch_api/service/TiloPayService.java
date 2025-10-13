@@ -155,7 +155,7 @@ public class TiloPayService {
         requestBody.put("key", apiKey);
         requestBody.put("amount", product.getPrice().toString());
         requestBody.put("currency", "CRC");
-        requestBody.put("reference", transaction.getId().toString());
+        requestBody.put("reference", product.getName());
         requestBody.put("type", 1);
         requestBody.put("description", product.getDescription());
         requestBody.put("client", usuario.getNombre() + " " + usuario.getApellido());
