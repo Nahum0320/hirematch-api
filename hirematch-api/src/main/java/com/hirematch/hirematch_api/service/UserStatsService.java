@@ -78,10 +78,14 @@ public class UserStatsService {
     @Transactional
     public void activateSubscription(Long userId, String subscriptionType, int durationInDays) {
         UserStats stats = getUserStats(userId);
+        int likesDisponibles = stats.getLikesRemaining();
+        int superlikesDisponibles = stats.getSuperlikesRemaining();
         stats.setHasSubscription(true);
         stats.setSubscriptionType(subscriptionType);
         stats.setSubscriptionStartDate(LocalDateTime.now());
         stats.setSubscriptionEndDate(LocalDateTime.now().plusDays(durationInDays));
+        stats.setLikesRemaining(likesDisponibles + 999);
+        stats.setSuperlikesRemaining(superlikesDisponibles + 12);
         userStatsRepository.save(stats);
     }
 }

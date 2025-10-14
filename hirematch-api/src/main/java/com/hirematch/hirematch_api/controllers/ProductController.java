@@ -14,24 +14,21 @@ public class ProductController {
 
     @Autowired
     private ProductRepository productRepository;
-    
+
+    /**
+     * Obtener todos los productos disponibles
+     */
     @GetMapping
     public ResponseEntity<List<Product>> getAllProducts() {
-        return ResponseEntity.ok(productRepository.findAll());
+        List<Product> products = productRepository.findAll();
+        return ResponseEntity.ok(products);
     }
-    
-    @GetMapping("/{type}")
-    public ResponseEntity<List<Product>> getProductsByType(@PathVariable String type) {
-        try {
-            Product.ProductType productType = Product.ProductType.valueOf(type);
-            return ResponseEntity.ok(productRepository.findByType(productType));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-    
-    @GetMapping("/detail/{id}")
-    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
+
+    /**
+     * Obtener un producto por ID
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getProductById(@PathVariable Long id) {
         return productRepository.findById(id)
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
