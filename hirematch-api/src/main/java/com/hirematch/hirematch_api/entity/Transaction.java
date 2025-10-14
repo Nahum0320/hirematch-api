@@ -26,6 +26,9 @@ public class Transaction {
     @JoinColumn(name = "product_id")
     private Product product;
 
+    @Column(name = "order_number") // ⭐ NUEVO CAMPO
+    private String orderNumber; // Nuestro orderNumber único
+
     private BigDecimal amount;
     private LocalDateTime transactionDate;
     private String transactionId;  // ID de transacción de Onvo Pay

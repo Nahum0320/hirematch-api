@@ -40,12 +40,13 @@ public class LikeController {
 
     public LikeController(LikeService likeService, TokenService tokenService,
                           SesionRepository sesionRepository, PerfilRepository perfilRepository,
-                          OfertaService ofertaService) {
+                          OfertaService ofertaService, UserStatsService userStatsService) {
         this.likeService = likeService;
         this.tokenService = tokenService;
         this.sesionRepository = sesionRepository;
         this.perfilRepository = perfilRepository;
         this.ofertaService = ofertaService;
+        this.userStatsService = userStatsService;
     }
 
     @PostMapping("/oferta/{ofertaId}")
