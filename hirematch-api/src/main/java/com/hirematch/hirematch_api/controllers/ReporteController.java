@@ -9,6 +9,7 @@ import com.hirematch.hirematch_api.entity.Sesion;
 import com.hirematch.hirematch_api.entity.TipoReporte;
 import com.hirematch.hirematch_api.entity.Usuario;
 import com.hirematch.hirematch_api.repository.OfertaLaboralRepository;
+import com.hirematch.hirematch_api.repository.PerfilRepository;
 import com.hirematch.hirematch_api.repository.ReporteRepository;
 import com.hirematch.hirematch_api.repository.SesionRepository;
 import com.hirematch.hirematch_api.repository.UsuarioRepository;
@@ -29,17 +30,21 @@ public class ReporteController {
     private final SesionRepository sesionRepository;
     private final UsuarioRepository usuarioRepository;
     private final OfertaLaboralRepository ofertaLaboralRepository;
+    private final PerfilRepository perfilRepository;
 
-    public ReporteController(ReporteRepository reporteRepository,
-                             TokenService tokenService,
-                             SesionRepository sesionRepository,
-                             UsuarioRepository usuarioRepository,
-                             OfertaLaboralRepository ofertaLaboralRepository) {
+    public ReporteController(
+            ReporteRepository reporteRepository,
+            TokenService tokenService,
+            SesionRepository sesionRepository,
+            UsuarioRepository usuarioRepository,
+            OfertaLaboralRepository ofertaLaboralRepository,
+            PerfilRepository perfilRepository) {
         this.reporteRepository = reporteRepository;
         this.tokenService = tokenService;
         this.sesionRepository = sesionRepository;
         this.usuarioRepository = usuarioRepository;
         this.ofertaLaboralRepository = ofertaLaboralRepository;
+        this.perfilRepository = perfilRepository;
     }
 
     @PostMapping("/usuario")
@@ -49,10 +54,10 @@ public class ReporteController {
 
         Usuario reportante = obtenerUsuarioAutenticado(authHeader);
 
-        // Validate that either reportadoId or ofertaId is provided, but not both
-        if ((request.getReportadoId() == null && request.getOfertaId() == null) ||
-                (request.getReportadoId() != null && request.getOfertaId() != null)) {
-            throw new ValidacionException("Debe especificar un usuario o una oferta para reportar, pero no ambos");
+        // Validate that either perfilId or ofertaId is provided, but not both
+        if ((request.getPerfilId() == null && request.getOfertaId() == null) ||
+                (request.getPerfilId() != null && request.getOfertaId() != null)) {
+            throw new ValidacionException("Debe especificar un perfil o una oferta para reportar, pero no ambos");
         }
 
         TipoReporte tipo;
@@ -69,9 +74,12 @@ public class ReporteController {
         reporte.setEstado(EstadoReporte.PENDIENTE);
         reporte.setFecha(LocalDateTime.now());
 
-        if (request.getReportadoId() != null) {
+        if (request.getPerfilId() != null) {
             // Reporte de usuario
-            Usuario reportado = usuarioRepository.findById(request.getReportadoId())
+            Long usuarioId = perfilRepository.findUsuarioIdByPerfilId(request.getPerfilId())
+                    .orElseThrow(() -> new ValidacionException("Perfil no encontrado"));
+
+            Usuario reportado = usuarioRepository.findById(usuarioId)
                     .orElseThrow(() -> new ValidacionException("Usuario reportado no encontrado"));
 
             if (reportante.getUsuarioId().equals(reportado.getUsuarioId())) {
