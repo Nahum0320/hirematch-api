@@ -14,6 +14,11 @@ public interface PerfilRepository extends JpaRepository<Perfil, Long> {
     // Nuevo método para obtener perfil por email del usuario
     @Query("SELECT p FROM Perfil p WHERE p.usuario.email = :email")
     Optional<Perfil> findByUsuarioEmail(@Param("email") String email);
+
+    // Nuevo método para obtener el ID del usuario por el ID del perfil
+    @Query("SELECT p.usuario.usuarioId FROM Perfil p WHERE p.id = :perfilId")
+    Optional<Long> findUsuarioIdByPerfilId(@Param("perfilId") Long perfilId);
+
 }
 
 
