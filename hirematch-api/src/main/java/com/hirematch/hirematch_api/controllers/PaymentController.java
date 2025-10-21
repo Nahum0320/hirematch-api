@@ -2,8 +2,11 @@ package com.hirematch.hirematch_api.controllers;
 
 import com.hirematch.hirematch_api.DTO.PagoSuscripcionRequest;
 import com.hirematch.hirematch_api.DTO.PagoSuscripcionResponse;
+import com.hirematch.hirematch_api.DTO.PagoLikesRequest;
+import com.hirematch.hirematch_api.DTO.PagoLikesResponse;
 import com.hirematch.hirematch_api.ValidacionException;
 import com.hirematch.hirematch_api.entity.Transaction;
+import com.hirematch.hirematch_api.entity.Product;
 import com.hirematch.hirematch_api.entity.Sesion;
 import com.hirematch.hirematch_api.entity.Usuario;
 import com.hirematch.hirematch_api.repository.ProductRepository;
@@ -52,7 +55,7 @@ public class PaymentController {
     @Value("${tilopay.callback.url:hirematch://payment-result}")
     private String callbackUrl;
 
-    @Value("${tilopay.webhook.url:https://f310a5d17046.ngrok-free.app/api/payments/webhook}")
+    @Value("${tilopay.webhook.url:https://cinda-untrusted-graham.ngrok-free.dev/api/payments/webhook}")
     private String webhookUrl;
 
     @PostMapping("/suscripcion/premium")
@@ -82,6 +85,73 @@ public ResponseEntity<PagoSuscripcionResponse> createPremiumSubscription(
         return ResponseEntity.badRequest().body(new PagoSuscripcionResponse(null, null, "Error al procesar la solicitud: " + e.getMessage()));
     }
 }
+    @PostMapping("/likes")
+public ResponseEntity<PagoLikesResponse> createLikesPurchase(
+        @Valid @RequestBody PagoLikesRequest request,
+        @RequestHeader("Authorization") String authHeader) {
+    try {
+        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+        Long userId = usuario.getUsuarioId();
+
+        // Validar que el producto existe y es de tipo LIKE_PACKAGE
+        var productOpt = productRepository.findById(request.getProductId());
+        if (productOpt.isEmpty() || productOpt.get().getType() != Product.ProductType.LIKE_PACKAGE) {
+            logger.error("Producto de likes no válido: {}", request.getProductId());
+            return ResponseEntity.badRequest().body(new PagoLikesResponse(null, null, "Producto de likes no válido"));
+        }
+
+        logger.info("Processing likes purchase for usuarioId: {}, productId: {}", userId, request.getProductId());
+
+        String callbackUrl = request.getCallbackUrl() != null ? request.getCallbackUrl() : this.callbackUrl;
+
+        Map<String, Object> paymentLink = tiloPayService.createPaymentLink(userId, request.getProductId(), callbackUrl, webhookUrl);
+
+        PagoLikesResponse response = new PagoLikesResponse();
+        response.setPaymentUrl(paymentLink.get("url").toString());
+        response.setTilopayLinkId(paymentLink.get("id").toString());
+        return ResponseEntity.ok(response);
+    } catch (ValidacionException e) {
+        logger.error("Validation error: {}", e.getMessage());
+        return ResponseEntity.badRequest().body(new PagoLikesResponse(null, null, e.getMessage()));
+    } catch (Exception e) {
+        logger.error("Error creating likes purchase payment link: {}", e.getMessage(), e);
+        return ResponseEntity.badRequest().body(new PagoLikesResponse(null, null, "Error al procesar la solicitud: " + e.getMessage()));
+    }
+}
+
+    @PostMapping("/superlikes")
+    public ResponseEntity<com.hirematch.hirematch_api.DTO.PagoSuperlikesResponse> createSuperlikesPurchase(
+            @Valid @RequestBody com.hirematch.hirematch_api.DTO.PagoSuperlikesRequest request,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+            Long userId = usuario.getUsuarioId();
+
+            // Validar que el producto existe y es de tipo SUPERLIKE_PACKAGE
+            var productOpt = productRepository.findById(request.getProductId());
+            if (productOpt.isEmpty() || productOpt.get().getType() != Product.ProductType.SUPERLIKE_PACKAGE) {
+                logger.error("Producto de superlikes no válido: {}", request.getProductId());
+                return ResponseEntity.badRequest().body(new com.hirematch.hirematch_api.DTO.PagoSuperlikesResponse(null, null, "Producto de superlikes no válido"));
+            }
+
+            logger.info("Processing superlikes purchase for usuarioId: {}, productId: {}", userId, request.getProductId());
+
+            String callbackUrl = request.getCallbackUrl() != null ? request.getCallbackUrl() : this.callbackUrl;
+
+            Map<String, Object> paymentLink = tiloPayService.createPaymentLink(userId, request.getProductId(), callbackUrl, webhookUrl);
+
+            com.hirematch.hirematch_api.DTO.PagoSuperlikesResponse response = new com.hirematch.hirematch_api.DTO.PagoSuperlikesResponse();
+            response.setPaymentUrl(paymentLink.get("url").toString());
+            response.setTilopayLinkId(paymentLink.get("id").toString());
+            return ResponseEntity.ok(response);
+        } catch (ValidacionException e) {
+            logger.error("Validation error: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(new com.hirematch.hirematch_api.DTO.PagoSuperlikesResponse(null, null, e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error creating superlikes purchase payment link: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(new com.hirematch.hirematch_api.DTO.PagoSuperlikesResponse(null, null, "Error al procesar la solicitud: " + e.getMessage()));
+        }
+    }
 
     @PostMapping("/verify-and-apply/{tilopayLinkId}")
     public ResponseEntity<?> verifyAndApplyTransaction(

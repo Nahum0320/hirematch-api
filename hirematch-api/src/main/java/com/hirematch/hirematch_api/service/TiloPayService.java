@@ -14,6 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -23,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class TiloPayService {
+    private static final Logger logger = LoggerFactory.getLogger(TiloPayService.class);
 
     @Autowired
     private RestTemplate restTemplate;
@@ -305,13 +309,16 @@ public class TiloPayService {
         Transaction transaction = transactionRepository.findByTransactionId(tilopayLinkId)
                 .orElseThrow(() -> new RuntimeException("Transacción no encontrada con ID: " + tilopayLinkId));
 
+        // LOG extra para depuración
+        logger.info("[verifyAndApplyTransaction] tilopayLinkId: {} | status actual: {}", tilopayLinkId, transaction.getStatus());
+
         // Si ya está completada, no hacer nada más
         if ("COMPLETED".equals(transaction.getStatus())) {
+            logger.info("[verifyAndApplyTransaction] Transacción ya completada. No se vuelve a aplicar.");
             Map<String, Object> result = new HashMap<>();
             result.put("status", "COMPLETED");
             result.put("message", "La transacción ya fue procesada anteriormente");
             result.put("transaction", transaction);
-            System.out.println("Transacción ya completada");
             return result;
         }
 
@@ -336,30 +343,28 @@ public class TiloPayService {
 
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(
-                    apiUrl + "/consult",
-                    request,
-                    Map.class);
+                apiUrl + "/consult",
+                request,
+                Map.class);
 
-            System.out.println("Response Status: " + response.getStatusCode());
-            System.out.println("Response Body: " + objectMapper.writeValueAsString(response.getBody()));
+            logger.info("[verifyAndApplyTransaction] Respuesta de TiloPay: {}", objectMapper.writeValueAsString(response.getBody()));
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
-
-                // Verificar si hay respuestas
                 Object responseObj = responseBody.get("response");
                 if (responseObj instanceof List) {
                     List<Map<String, Object>> responses = (List<Map<String, Object>>) responseObj;
-
                     if (!responses.isEmpty()) {
                         Map<String, Object> paymentData = responses.get(0);
                         String code = paymentData.get("code") != null ? paymentData.get("code").toString() : null;
+                        logger.info("[verifyAndApplyTransaction] code recibido de TiloPay: {}", code);
 
                         // Guardar los datos completos de la verificación
                         transaction.setTransactionData(objectMapper.writeValueAsString(paymentData));
 
                         // code "1" significa aprobado
                         if ("1".equals(code)) {
+                            logger.info("[verifyAndApplyTransaction] Pago aprobado. Aplicando beneficios...");
                             transaction.setStatus("COMPLETED");
                             transactionRepository.save(transaction);
 
@@ -375,6 +380,7 @@ public class TiloPayService {
                             System.out.println("Pago verificado y completado");
                             return result;
                         } else {
+                            logger.warn("[verifyAndApplyTransaction] Pago no aprobado. code: {}", code);
                             transaction.setStatus("FAILED");
                             transactionRepository.save(transaction);
 
@@ -388,6 +394,7 @@ public class TiloPayService {
                             return result;
                         }
                     } else {
+                        logger.warn("[verifyAndApplyTransaction] No hay datos de la transacción aún. Pendiente.");
                         // No hay datos de la transacción aún, mantener como PENDING
                         Map<String, Object> result = new HashMap<>();
                         result.put("status", "PENDING");
@@ -398,20 +405,19 @@ public class TiloPayService {
                         return result;
                     }
                 } else {
+                    logger.error("[verifyAndApplyTransaction] Formato de respuesta inesperado de TiloPay");
                     throw new RuntimeException("Formato de respuesta inesperado de TiloPay");
                 }
             } else {
+                logger.error("[verifyAndApplyTransaction] Error al consultar la transacción: {}", response.getBody());
                 throw new RuntimeException("Error al consultar la transacción: " + response.getBody());
             }
         } catch (Exception e) {
-            System.err.println("Error al verificar la transacción: " + e.getMessage());
-            e.printStackTrace();
-
+            logger.error("[verifyAndApplyTransaction] Error al verificar la transacción: {}", e.getMessage(), e);
             Map<String, Object> result = new HashMap<>();
             result.put("status", "ERROR");
             result.put("message", "Error al verificar el pago: " + e.getMessage());
             result.put("transaction", transaction);
-
             return result;
         }
     }
