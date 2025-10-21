@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByType(Product.ProductType type);
+    List<Product> findByTypeIn(List<Product.ProductType> types);
 }
