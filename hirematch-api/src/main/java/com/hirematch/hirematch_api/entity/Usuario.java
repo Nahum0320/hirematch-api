@@ -72,6 +72,15 @@ public class Usuario implements UserDetails {
     @Column(name = "llave_unica", length = 255)
     private String llaveUnica;
 
+    @Column(name = "reportes_acumulados", columnDefinition = "INTEGER DEFAULT 0")
+    private Integer reportesAcumulados = 0;
+
+    @Column(name = "nivel_bloqueo")
+    private Integer nivelBloqueo = 0; // 0 = ninguno, 1 = temporal corto, 2 = temporal largo, 3 = permanente
+
+    @Column(name = "fecha_fin_bloqueo")
+    private java.time.LocalDateTime fechaFinBloqueo;
+
     @Column(name = "activo", nullable = false)
     private Boolean activo = false;
 
