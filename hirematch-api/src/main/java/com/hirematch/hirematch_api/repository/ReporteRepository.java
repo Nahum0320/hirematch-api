@@ -43,6 +43,16 @@ public interface ReporteRepository extends JpaRepository<Reporte, Long> {
     @Query("SELECT COUNT(r) FROM Reporte r WHERE r.oferta = :oferta")
     long countByOferta(OfertaLaboral oferta);
 
+    // Búsqueda flexible para administración con filtros opcionales
+    // Implementada en ReporteRepositoryImpl usando Criteria API para evitar problemas de tipos
+    org.springframework.data.domain.Page<Reporte> buscarFiltros(
+            EstadoReporte estado,
+            TipoReporte tipo,
+            java.time.LocalDateTime desde,
+            java.time.LocalDateTime hasta,
+            org.springframework.data.domain.Pageable pageable
+    );
+
     // Prevención de duplicados para usuarios
     Optional<Reporte> findByReportanteAndReportadoAndTipoAndEstado(
             Usuario reportante, Usuario reportado, TipoReporte tipo, EstadoReporte estado
