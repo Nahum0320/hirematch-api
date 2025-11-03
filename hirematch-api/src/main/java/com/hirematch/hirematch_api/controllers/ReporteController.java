@@ -198,6 +198,29 @@ public class ReporteController {
         return ResponseEntity.ok("Reporte procesado con estado: " + reporte.getEstado().name());
     }
 
+    @PutMapping("/admin/{id}/revision")
+    public ResponseEntity<String> marcarEnRevision(
+            @PathVariable("id") Long id,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+        if (usuario.getPerfil() == null || !"ADMIN".equalsIgnoreCase(usuario.getPerfil().getTipoPerfil())) {
+            throw new ValidacionException("Acceso denegado: se requieren permisos de administrador");
+        }
+        
+        Reporte reporte = reporteRepository.findById(id)
+                .orElseThrow(() -> new ValidacionException("Reporte no encontrado"));
+        
+        if (reporte.getEstado() != EstadoReporte.PENDIENTE) {
+            throw new ValidacionException("Solo se pueden marcar como EN_REVISION los reportes PENDIENTES");
+        }
+        
+        reporte.setEstado(EstadoReporte.EN_REVISION);
+        reporteRepository.save(reporte);
+        
+        return ResponseEntity.ok("Reporte marcado como EN_REVISION exitosamente");
+    }
+
     @PostMapping("/usuario")
     public ResponseEntity<String> reportarUsuario(
             @Valid @RequestBody ReporteUsuarioRequest request,
