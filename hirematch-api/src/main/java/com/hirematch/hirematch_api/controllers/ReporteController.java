@@ -290,6 +290,147 @@ public class ReporteController {
         return ResponseEntity.ok("Reporte creado exitosamente. Gracias por ayudar a mantener la comunidad segura.");
     }
 
+    // ======== ENDPOINTS DE GESTIÓN DE BLOQUEOS ========
+    
+    @GetMapping("/admin/usuarios/bloqueados")
+    public ResponseEntity<org.springframework.data.domain.Page<UsuarioBloqueoResponse>> listarUsuariosBloqueados(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "nivelBloqueo", required = false) Integer nivelBloqueo,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        Usuario usuario = obtenerUsuarioAutenticado(authHeader);
+        if (usuario.getPerfil() == null || !"ADMIN".equalsIgnoreCase(usuario.getPerfil().getTipoPerfil())) {
+            throw new ValidacionException("Acceso denegado: se requieren permisos de administrador");
+        }
+
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<Usuario> usuarios;
+        
+        if (nivelBloqueo != null) {
+            usuarios = usuarioRepository.findByNivelBloqueo(nivelBloqueo, pageable);
+        } else {
+            // Listar todos los usuarios con algún nivel de bloqueo (> 0)
+            usuarios = usuarioRepository.findByNivelBloqueoGreaterThan(0, pageable);
+        }
+
+        var dtoPage = usuarios.map(u -> new UsuarioBloqueoResponse(
+                u.getUsuarioId(),
+                u.getNombre(),
+                u.getApellido(),
+                u.getEmail(),
+                u.getReportesAcumulados() != null ? u.getReportesAcumulados() : 0,
+                u.getNivelBloqueo() != null ? u.getNivelBloqueo() : 0,
+                u.getFechaFinBloqueo(),
+                u.getActivo(),
+                u.getPerfil() != null ? u.getPerfil().getTipoPerfil() : null
+        ));
+
+        return ResponseEntity.ok(dtoPage);
+    }
+
+    @PutMapping("/admin/usuarios/{usuarioId}/bloqueo")
+    public ResponseEntity<String> actualizarBloqueo(
+            @PathVariable("usuarioId") Long usuarioId,
+            @RequestBody ActualizarBloqueoRequest request,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        Usuario admin = obtenerUsuarioAutenticado(authHeader);
+        if (admin.getPerfil() == null || !"ADMIN".equalsIgnoreCase(admin.getPerfil().getTipoPerfil())) {
+            throw new ValidacionException("Acceso denegado: se requieren permisos de administrador");
+        }
+
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ValidacionException("Usuario no encontrado"));
+
+        // Actualizar nivel de bloqueo
+        if (request.nivelBloqueo != null) {
+            usuario.setNivelBloqueo(request.nivelBloqueo);
+        }
+
+        // Actualizar fecha fin de bloqueo
+        if (request.fechaFinBloqueo != null) {
+            usuario.setFechaFinBloqueo(request.fechaFinBloqueo);
+        } else if (request.nivelBloqueo != null && request.nivelBloqueo == 0) {
+            // Si se revierte el bloqueo, limpiar fecha
+            usuario.setFechaFinBloqueo(null);
+        }
+
+        // Actualizar estado activo
+        if (request.activo != null) {
+            usuario.setActivo(request.activo);
+        }
+
+        // Si se está desbloqueando (nivel 0), activar usuario
+        if (request.nivelBloqueo != null && request.nivelBloqueo == 0) {
+            usuario.setActivo(true);
+            usuario.setFechaFinBloqueo(null);
+        }
+
+        usuarioRepository.save(usuario);
+
+        String mensaje = request.nivelBloqueo != null && request.nivelBloqueo == 0 
+            ? "Usuario desbloqueado exitosamente" 
+            : "Bloqueo actualizado exitosamente";
+
+        return ResponseEntity.ok(mensaje);
+    }
+
+    @PostMapping("/admin/usuarios/{usuarioId}/desbloquear")
+    public ResponseEntity<String> desbloquearUsuario(
+            @PathVariable("usuarioId") Long usuarioId,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        Usuario admin = obtenerUsuarioAutenticado(authHeader);
+        if (admin.getPerfil() == null || !"ADMIN".equalsIgnoreCase(admin.getPerfil().getTipoPerfil())) {
+            throw new ValidacionException("Acceso denegado: se requieren permisos de administrador");
+        }
+
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ValidacionException("Usuario no encontrado"));
+
+        usuario.setNivelBloqueo(0);
+        usuario.setFechaFinBloqueo(null);
+        usuario.setActivo(true);
+
+        usuarioRepository.save(usuario);
+
+        return ResponseEntity.ok("Usuario desbloqueado exitosamente");
+    }
+
+    // DTOs internos
+    public static class ActualizarBloqueoRequest {
+        public Integer nivelBloqueo;
+        public LocalDateTime fechaFinBloqueo;
+        public Boolean activo;
+    }
+
+    public static class UsuarioBloqueoResponse {
+        public Long usuarioId;
+        public String nombre;
+        public String apellido;
+        public String email;
+        public Integer reportesAcumulados;
+        public Integer nivelBloqueo;
+        public LocalDateTime fechaFinBloqueo;
+        public Boolean activo;
+        public String tipoPerfil;
+
+        public UsuarioBloqueoResponse(Long usuarioId, String nombre, String apellido, String email,
+                                     Integer reportesAcumulados, Integer nivelBloqueo,
+                                     LocalDateTime fechaFinBloqueo, Boolean activo, String tipoPerfil) {
+            this.usuarioId = usuarioId;
+            this.nombre = nombre;
+            this.apellido = apellido;
+            this.email = email;
+            this.reportesAcumulados = reportesAcumulados;
+            this.nivelBloqueo = nivelBloqueo;
+            this.fechaFinBloqueo = fechaFinBloqueo;
+            this.activo = activo;
+            this.tipoPerfil = tipoPerfil;
+        }
+    }
+
     private Usuario obtenerUsuarioAutenticado(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new ValidacionException("Token de autorización requerido");

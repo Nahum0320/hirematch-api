@@ -39,8 +39,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/products").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                         .requestMatchers("/auth/**").permitAll()
-                        // Static resources (HTML admin page)
+                        // Static resources (HTML admin pages)
                         .requestMatchers("/admin-reportes.html").permitAll()
+                        .requestMatchers("/admin-bloqueos.html").permitAll()
                         .requestMatchers("/*.html", "/*.css", "/*.js", "/images/**").permitAll()
                         // Webhook must come before /api/payments/**
                         .requestMatchers(HttpMethod.POST, "/api/payments/webhook").permitAll()

@@ -33,13 +33,13 @@
         }
         
         .header {
-            background: #007bff;
+            background: linear-gradient(135deg, #398ebe 0%, #2a7aa8 100%);
             color: white;
             padding: 30px 40px;
             display: flex;
             align-items: center;
             gap: 24px;
-            box-shadow: 0 4px 15px rgba(0,123,255,0.2);
+            box-shadow: 0 4px 15px rgba(57,142,190,0.3);
             position: relative;
             overflow: hidden;
         }
@@ -113,13 +113,13 @@
         
         .login-section input:focus, .filters-section input:focus, .filters-section select:focus {
             outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            border-color: #398ebe;
+            box-shadow: 0 0 0 3px rgba(57, 142, 190, 0.1);
         }
         
         button {
             padding: 12px 24px;
-            background: #007bff;
+            background: #398ebe;
             color: white;
             border: none;
             border-radius: 8px;
@@ -128,13 +128,13 @@
             margin: 5px;
             font-weight: 600;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+            box-shadow: 0 2px 8px rgba(57,142,190,0.2);
         }
         
         button:hover {
             transform: translateY(-2px);
-            background: #0056b3;
-            box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+            background: #2a7aa8;
+            box-shadow: 0 4px 12px rgba(57,142,190,0.3);
         }
         
         button:active {
@@ -189,7 +189,7 @@
             display: block;
             margin-bottom: 5px;
             font-weight: 600;
-            color: #007bff;
+            color: #398ebe;
             font-size: 13px;
         }
         
@@ -199,7 +199,7 @@
             font-size: 20px;
             grid-column: 1 / -1;
             padding-bottom: 10px;
-            border-bottom: 2px solid #007bff;
+            border-bottom: 2px solid #398ebe;
         }
         
         .filter-buttons {
@@ -240,7 +240,7 @@
         }
         
         th {
-            background: #007bff;
+            background: #398ebe;
             color: white;
             font-weight: bold;
             text-transform: uppercase;
@@ -251,7 +251,7 @@
         tr:hover {
             background-color: #f0f8ff;
             transform: scale(1.01);
-            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+            box-shadow: 0 2px 8px rgba(57, 142, 190, 0.1);
         }
         
         tbody tr {
@@ -274,7 +274,7 @@
         }
         
         .pagination span {
-            color: #007bff;
+            color: #398ebe;
             font-weight: 600;
             padding: 0 10px;
         }
@@ -340,12 +340,12 @@
         }
         
         ::-webkit-scrollbar-thumb {
-            background: #007bff;
+            background: #398ebe;
             border-radius: 10px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: #0056b3;
+            background: #2a7aa8;
         }
         
         /* Animación de carga */
@@ -617,7 +617,7 @@
         .modal-header {
             margin-bottom: 25px;
             padding-bottom: 15px;
-            border-bottom: 3px solid #007bff;
+            border-bottom: 3px solid #398ebe;
         }
         
         .modal-header h2 {
@@ -643,18 +643,18 @@
             padding: 15px;
             background: #f8f9fa;
             border-radius: 10px;
-            border-left: 4px solid #007bff;
+            border-left: 4px solid #398ebe;
             transition: all 0.3s ease;
         }
         
         .detail-row:hover {
             transform: translateX(5px);
-            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+            box-shadow: 0 2px 8px rgba(57, 142, 190, 0.1);
         }
         
         .detail-label {
             font-weight: bold;
-            color: #007bff;
+            color: #398ebe;
             font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -675,8 +675,8 @@
         
         textarea:focus {
             outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            border-color: #398ebe;
+            box-shadow: 0 0 0 3px rgba(57, 142, 190, 0.1);
         }
         
         .stats-section {
@@ -693,18 +693,18 @@
             text-align: center;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
-            border-left: 4px solid #007bff;
+            border-left: 4px solid #398ebe;
         }
         
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.2);
+            box-shadow: 0 6px 20px rgba(57, 142, 190, 0.2);
         }
         
         .stat-value {
             font-size: 36px;
             font-weight: bold;
-            color: #007bff;
+            color: #398ebe;
         }
         
         .stat-label {
@@ -731,6 +731,38 @@
             background: rgba(255,255,255,0.25);
             transform: translateY(-50%);
         }
+        
+        .nav-buttons {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.15);
+            border: 2px solid white;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.25);
+            transform: scale(1.05);
+        }
+        
+        .nav-btn.active {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.8);
+        }
     </style>
 </head>
 <body>
@@ -749,15 +781,15 @@
         </div>
         <div class="content-wrapper">
         <div id="loginSection" class="login-section">
-            <h2 style="text-align:center; margin-bottom:25px; color:#007bff; font-size:24px; font-weight:700;"> Iniciar Sesión</h2>
+            <h2 style="text-align:center; margin-bottom:25px; color:#398ebe; font-size:24px; font-weight:700;"> Iniciar Sesión</h2>
             <div id="loginMessage"></div>
             <div style="max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                 <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #007bff; font-size: 14px;"> Email</label>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #398ebe; font-size: 14px;"> Email</label>
                     <input type="email" id="loginEmail" placeholder="correo@ejemplo.com" style="width: 100%;" onkeypress="handleLoginKeyPress(event)">
                 </div>
                 <div style="margin-bottom: 25px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #007bff; font-size: 14px;"> Contraseña</label>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #398ebe; font-size: 14px;"> Contraseña</label>
                     <input type="password" id="loginPassword" placeholder="••••••••" style="width: 100%;" onkeypress="handleLoginKeyPress(event)">
                 </div>
                 <div style="text-align: center;">
@@ -866,6 +898,12 @@
                 <span id="pageInfo">Página 1 de 1</span>
                 <button onclick="nextPage()" id="nextBtn" disabled>Siguiente</button>
             </div>
+            
+            <!-- Navegación entre páginas -->
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 30px; padding: 20px 0;">
+                <a href="admin-reportes.html" style="padding: 10px 20px; background: rgba(57,142,190,0.15); border: 2px solid #398ebe; color: #398ebe; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">Reportes</a>
+                <a href="admin-bloqueos.html" style="padding: 10px 20px; background: rgba(15,72,110,0.15); border: 2px solid #0f486e; color: #0f486e; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">Bloqueos</a>
+            </div>
         </div>
     </div>
     
@@ -931,6 +969,7 @@
         let totalPages = 0;
         let currentReporteId = null;
         let tokenRenewalInterval = null;
+        let autoReloadInterval = null;
         
         // Verificar sesión guardada al cargar la página
         window.addEventListener('DOMContentLoaded', function() {
@@ -957,6 +996,7 @@
                     document.getElementById('mainSection').classList.remove('hidden');
                     document.getElementById('logoutBtn').classList.remove('hidden');
                     startTokenRenewal();
+                    startAutoReload();
                     loadReportes();
                     loadStats();
                 } else {
@@ -1049,6 +1089,7 @@
                 
                 // Iniciar renovación automática de token
                 startTokenRenewal();
+                startAutoReload();
                 
                 // Cargar datos
                 loadReportes();
@@ -1074,6 +1115,17 @@
             tokenRenewalInterval = setInterval(() => {
                 renewToken();
             }, renewalIntervalMs);
+        }
+        
+        function startAutoReload() {
+            if (autoReloadInterval) {
+                clearInterval(autoReloadInterval);
+            }
+            // Auto-recargar datos cada 30 segundos
+            autoReloadInterval = setInterval(() => {
+                loadReportes();
+                loadStats();
+            }, 7000);
         }
         
         // Renovar token
@@ -1116,6 +1168,11 @@
             if (tokenRenewalInterval) {
                 clearInterval(tokenRenewalInterval);
                 tokenRenewalInterval = null;
+            }
+            
+            if (autoReloadInterval) {
+                clearInterval(autoReloadInterval);
+                autoReloadInterval = null;
             }
             
             // Hacer logout en el servidor si el token aún es válido
