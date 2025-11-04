@@ -111,4 +111,74 @@ public class EmailService {
             return false;
         }
     }
+
+    public boolean enviarCorreoNotificacionReporte(String emailDestinatario, String nombreDestinatario, 
+                                                     String mensaje, String motivoReporte, 
+                                                     String tipoReporte, String detallesAdicionales) {
+        try {
+            logger.info("Enviando correo de notificación de reporte a: " + emailDestinatario);
+
+            MimeMessage mensajeCorreo = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensajeCorreo, true, "UTF-8");
+
+            helper.setFrom(fromEmail, "HireMatch");
+            helper.setTo(emailDestinatario);
+            helper.setSubject("Notificación de Reporte - HireMatch");
+
+            // Construir sección de detalles adicionales si existe
+            String seccionDetalles = "";
+            if (detallesAdicionales != null && !detallesAdicionales.isEmpty()) {
+                seccionDetalles = String.format("""
+                    <div style='background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin: 15px 0;'>
+                        <h3 style='color: #333; font-size: 16px; margin-top: 0;'>Información del elemento reportado:</h3>
+                        <p style='font-size: 14px; color: #555; white-space: pre-line;'>%s</p>
+                    </div>
+                    """, detallesAdicionales);
+            }
+
+            String htmlContent = String.format("""
+                <html>
+                <body style='font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;'>
+                    <div style='max-width: 600px; margin: auto; background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);'>
+                        <h2 style='color: #d32f2f;'>¡Hola %s!</h2>
+                        <p style='font-size: 16px;'>Se ha procesado un reporte relacionado con tu %s en la plataforma <strong>HireMatch</strong>.</p>
+                        
+                        <div style='background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 20px 0;'>
+                            <p style='margin: 0; font-size: 15px; font-weight: bold; color: #856404;'>Estado de la cuenta:</p>
+                            <p style='margin: 5px 0 0 0; font-size: 14px; color: #856404;'>%s</p>
+                        </div>
+                        
+                        <div style='background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0;'>
+                            <h3 style='color: #333; font-size: 16px; margin-top: 0;'>Detalles del reporte:</h3>
+                            <p style='font-size: 14px; color: #555; margin: 8px 0;'><strong>Motivo reportado:</strong></p>
+                            <p style='font-size: 14px; color: #666; background-color: #fff; padding: 10px; border-radius: 5px; margin: 5px 0;'>%s</p>
+                        </div>
+                        
+                        %s
+                        
+                        <p style='font-size: 14px; color: #333; margin-top: 20px;'>Por favor, mantén el uso de buenas prácticas en la plataforma y respeta las normas de la comunidad.</p>
+                        
+                        <hr style='margin: 30px 0; border: none; border-top: 1px solid #ddd;'>
+                        
+                        <p style='font-size: 12px; color: #999;'>Si crees que esto es un error o deseas más información, no dudes en contactarnos respondiendo a este correo.</p>
+                        <p style='font-size: 14px;'>Atentamente,<br>El equipo de <strong>HireMatch</strong></p>
+                    </div>
+                </body>
+                </html>
+                """, nombreDestinatario, tipoReporte, mensaje, motivoReporte, seccionDetalles);
+
+            helper.setText(htmlContent, true);
+
+            mailSender.send(mensajeCorreo);
+            logger.info("Correo de notificación de reporte enviado con éxito a: " + emailDestinatario);
+            return true;
+
+        } catch (MessagingException e) {
+            logger.severe("Error al enviar correo de notificación de reporte a " + emailDestinatario + ": " + e.getMessage());
+            return false;
+        } catch (Exception e) {
+            logger.severe("Error general al enviar correo de notificación de reporte a " + emailDestinatario + ": " + e.getMessage());
+            return false;
+        }
+    }
 }
